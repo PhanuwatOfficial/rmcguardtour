@@ -1308,27 +1308,8 @@
             }
         }
 
-        // Emergency Contact Information
-        const emergencyContacts = [
-            { no: 1, name: 'คุณอารีย์', position: 'ผู้จัดการฝ่ายทรัพยากรมนุษย์', phone: '086-6680199', extension: '', internal: '103' },
-            { no: 2, name: 'คุณกฤษดา', position: 'ผู้จัดการฝ่ายผลิต/วิศวกรรม', phone: '099-2830354', extension: '', internal: '600' },
-            { no: 3, name: 'คุณรุ่งทิวา', position: 'ผู้จัดการฝ่ายบัญชีและการเงิน', phone: '086-3325205', extension: '', internal: '408' },
-            { no: 4, name: 'คุณรำเพลย', position: 'ผู้จัดการแผนกประสานงานขาย', phone: '086-6680198', extension: '', internal: '203' },
-            { no: 5, name: 'คุณวิทวัส', position: 'ผู้ช่วยผู้จัดการฝ่ายผลิต FFB', phone: '085-0675783', extension: '', internal: '133' },
-            { no: 6, name: 'คุณทนงศักดิ์', position: 'ผู้จัดการแผนกTLP', phone: '087-7605806', extension: '', internal: '606' },
-            { no: 7, name: 'คุณณัฐวรรณ', position: 'ผช.ผู้จัดการฝ่ายจัดซื้อ', phone: '092-4541583', extension: '', internal: '306' },
-            { no: 8, name: 'คุณมณีรัตน์', position: 'หัวหน้าแผนกทรัพยากรมนุษย์', phone: '090-9077721', extension: '', internal: '104' },
-            { no: 9, name: 'คุณเอกลักษณ์', position: 'หัวหน้าแผนกไอที', phone: '080-9522419', extension: '', internal: '115' },
-            { no: 10, name: 'คุณศิริชัย', position: 'หัวหน้าแผนกพีพีบอร์ด', phone: '086-6141342', extension: '', internal: '602' },
-            { no: 11, name: 'คุณวรชัย', position: 'หัวหน้าแผนกเครื่องจักร/TLP', phone: '080-5902376', extension: '', internal: '606' },
-            { no: 12, name: 'คุณนภาวรรณ', position: 'หัวหน้าแผนกรีดเหล็ก', phone: '091-4437689', extension: '', internal: '605' },
-            { no: 13, name: 'คุณอธิวัฒน์', position: 'หัวหน้าแผนกปิดผิว', phone: '092-4619561', extension: '', internal: '617' },
-            { no: 14, name: 'คุณสมควร', position: 'หัวหน้าแผนกขนส่งสินค้า', phone: '084-0881114', extension: '', internal: '500' },
-            { no: 15, name: 'คุณสุวรรณี', position: 'หัวหน้าแผนกคลังสินค้า', phone: '081-6282551', extension: '', internal: '504' },
-            { no: 16, name: 'คุณทองจันทร', position: 'หัวหน้าหน่วยตรวจสอบ HR', phone: '092-6813146', extension: '', internal: '112' },
-            { no: 17, name: 'คุณศุทธิพัฒน์', position: 'จป.วิชาชีพ', phone: '064-5192277', extension: '', internal: '109' },
-            { no: 18, name: 'ป้อม รปภ.', position: 'ศูนย์รักษาความปลอดภัย', phone: '034-813972', extension: '279', internal: '-' }
-        ];
+        // Emergency Contact Information - Load from Firebase
+        let emergencyContacts = [];
 
         function renderUsersList() {
             const container = document.getElementById('users-list');
@@ -2796,6 +2777,7 @@
             loadSchedules();
             loadScanRecords();
             loadEmergencies();
+            loadEmergencyContacts();
             setupNotifications();
             renderDashboard();
             renderLogActivityList();
@@ -2941,49 +2923,97 @@
             const tableView = document.getElementById('contact-table-view');
             const cardView = document.getElementById('contact-card-view');
             const tableBody = document.getElementById('contact-table-body');
+            
+            // Get current user from localStorage
+            let currentUserObj = null;
+            try {
+                const currentUserStr = localStorage.getItem('currentUser');
+                if (currentUserStr) {
+                    currentUserObj = JSON.parse(currentUserStr);
+                }
+            } catch (e) {
+                console.error('Error parsing currentUser:', e);
+            }
+            
+            const isAdmin = currentUserObj && (currentUserObj.role === 'admin');
 
-            // Ensure contactCardView has proper initial styles
-            if (cardView && !cardView.style.minHeight) {
-                cardView.style.minHeight = 'auto';
+            // Add button for admins
+            let addButtonHTML = '';
+            if (isAdmin) {
+                addButtonHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <button class="btn btn-primary" onclick="showAddEmergencyContactModal()" style="padding: 10px 16px; font-size: 0.95rem;">
+                            <i class="fas fa-plus"></i> เพิ่มผู้ติดต่อ
+                        </button>
+                    </div>
+                `;
             }
 
             // Desktop: Table View
             if (window.innerWidth > 700) {
                 tableView.style.display = 'block';
+                tableView.style.width = '100%';
                 cardView.innerHTML = '';
                 cardView.style.display = 'none';
-                cardView.style.visibility = 'hidden';
 
                 tableBody.innerHTML = '';
                 emergencyContacts.forEach(contact => {
                     const row = document.createElement('tr');
                     const phoneDisplay = contact.extension ? `${contact.phone} ต่อ ${contact.extension}` : contact.phone;
+                    
+                    let actionButtonsHTML = `
+                        <a href="tel:${contact.phone.replace(/[^0-9]/g, '')}" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.9rem; text-decoration: none; margin-right: 4px;">
+                            <i class="fas fa-phone"></i> โทร
+                        </a>
+                    `;
+                    
+                    if (isAdmin) {
+                        actionButtonsHTML += `
+                            <button class="btn btn-warning" onclick="showEditEmergencyContactModal(${contact.no})" style="padding: 6px 12px; font-size: 0.9rem; margin-right: 4px;">
+                                <i class="fas fa-edit"></i> แก้ไข
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteEmergencyContact(${contact.no})" style="padding: 6px 12px; font-size: 0.9rem;">
+                                <i class="fas fa-trash"></i> ลบ
+                            </button>
+                        `;
+                    }
+                    
                     row.innerHTML = `
                         <td>${contact.no}</td>
                         <td><strong>${contact.name}</strong></td>
                         <td>${contact.position}</td>
                         <td>${phoneDisplay}</td>
                         <td>${contact.internal}</td>
-                        <td style="text-align: center;">
-                            <a href="tel:${contact.phone.replace(/[^0-9]/g, '')}" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.9rem; text-decoration: none;">
-                                <i class="fas fa-phone"></i> โทร
-                            </a>
+                        <td style="text-align: center; white-space: nowrap;">
+                            ${actionButtonsHTML}
                         </td>
                     `;
                     tableBody.appendChild(row);
                 });
+                
+                // Prepend add button to table container if admin
+                if (isAdmin && tableView.parentElement.querySelector('.add-contact-btn-container') === null) {
+                    const container = document.createElement('div');
+                    container.className = 'add-contact-btn-container';
+                    container.innerHTML = addButtonHTML;
+                    tableView.parentElement.insertBefore(container, tableView);
+                }
             } else {
                 // Mobile: Card View
                 tableView.style.display = 'none';
                 cardView.innerHTML = '';
-
-                // Set display properties correctly for mobile
                 cardView.style.display = 'flex';
                 cardView.style.flexDirection = 'column';
                 cardView.style.gap = '0.8rem';
                 cardView.style.width = '100%';
                 cardView.style.boxSizing = 'border-box';
-                cardView.style.visibility = 'visible';
+
+                // Add button for mobile admins
+                if (isAdmin) {
+                    const addBtnDiv = document.createElement('div');
+                    addBtnDiv.innerHTML = addButtonHTML;
+                    cardView.appendChild(addBtnDiv.firstChild);
+                }
 
                 emergencyContacts.forEach(contact => {
                     const card = document.createElement('div');
@@ -2994,31 +3024,47 @@
                     card.style.boxSizing = 'border-box';
 
                     const extensionSpan = contact.extension ? `<p style="margin: 6px 0;"><strong style="color: #2E5AAC;"><i class="fas fa-phone-alt"></i> ต่อ:</strong> <span style="font-size: 1rem; font-weight: 600;">${contact.extension}</span></p>` : '';
+                    
+                    let actionButtonsHTML = `
+                        <a href="tel:${contact.phone.replace(/[^0-9]/g, '')}" style="flex: ${isAdmin ? '4' : '1'}; min-width: 150px; padding: 10px; text-decoration: none; text-align: center; font-size: 0.95rem; background-color: #0b6ec0; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer;">
+                            <i class="fas fa-phone"></i> โทร
+                        </a>
+                    `;
+                    
+                    if (isAdmin) {
+                        actionButtonsHTML += `
+                            <button onclick="showEditEmergencyContactModal(${contact.no})" style="flex: 1; padding: 10px; text-decoration: none; text-align: center; font-size: 0.95rem; background-color: #FFC107; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteEmergencyContact(${contact.no})" style="flex: 1; padding: 10px; text-decoration: none; text-align: center; font-size: 0.95rem; background-color: #DC3545; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+                    }
+                    
                     card.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                             <div style="flex: 1;">
-                                <h3 class="card-title" style="margin-bottom: 4px; font-size: 1.1rem; margin-top: 0;">
+                                <h3 class="card-title" style="margin-bottom: 4px; font-size: 1rem; margin-top: 0; color: #2E5AAC; font-weight: 600;">
                                     <i class="fas fa-user"></i> ${contact.name}
                                 </h3>
                                 <p style="color: #666; margin: 0; font-size: 0.9rem;">${contact.position}</p>
                             </div>
-                            <span style="background: #2E5AAC; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; white-space: nowrap; margin-left: 8px;">#${contact.no}</span>
+                            <span style="background: #0b6ec0; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; white-space: nowrap; margin-left: 8px;">#${contact.no}</span>
                         </div>
                         <div style="border-left: 3px solid #2E5AAC; padding-left: 12px; margin: 12px 0;">
                             <p style="margin: 6px 0;">
                                 <strong style="color: #2E5AAC;"><i class="fas fa-phone"></i> เบอร์ติดต่อ:</strong>
-                                <span style="font-size: 1.1rem; font-weight: 600;">${contact.phone}</span>
+                                <span style="font-size: 1rem; font-weight: 600; margin-left: 0.5rem;">${contact.phone}</span>
                             </p>
                             ${extensionSpan}
                             <p style="margin: 6px 0;">
-                                <strong style="color: #666;"><i class="fas fa-phone-alt"></i> ภายใน:</strong>
-                                <span>${contact.internal}</span>
+                                <strong style="color: #2E5AAC;"><i class="fas fa-phone-alt"></i> ภายใน:</strong>
+                                <span style="font-size: 1rem; font-weight: 600; margin-left: 0.5rem;">${contact.internal}</span>
                             </p>
                         </div>
                         <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-                            <a href="tel:${contact.phone.replace(/[^0-9]/g, '')}" style="flex: 1; min-width: 150px; padding: 10px; text-decoration: none; text-align: center; font-size: 0.95rem; background-color: #4caf50; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                <i class="fas fa-phone"></i> โทร ${contact.phone}
-                            </a>
+                            ${actionButtonsHTML}
                         </div>
                     `;
                     cardView.appendChild(card);
@@ -5028,7 +5074,8 @@
                 };
             });
         }
-        // ...existing code...
+  
+
         // Show edit form for emergency
         function showEditEmergencyForm(emergencyId) {
             const emergency = emergencies.find(e => e.id === emergencyId);
@@ -8186,6 +8233,186 @@
             document.getElementById('stats-end-date').value = todayStr;
             showStatsTab();
         });
+
+        // Emergency Contact Management with Firebase
+        function loadEmergencyContacts() {
+            const contactsRef = database.ref('emergencyContacts');
+            contactsRef.on('value', (snapshot) => {
+                emergencyContacts = [];
+                const data = snapshot.val();
+
+                if (data) {
+                    if (Array.isArray(data)) {
+                        emergencyContacts = data;
+                    } else {
+                        // If stored as object, convert to array
+                        Object.keys(data).forEach(key => {
+                            emergencyContacts.push(data[key]);
+                        });
+                    }
+                    // Sort by no
+                    emergencyContacts.sort((a, b) => (a.no || 0) - (b.no || 0));
+                }
+
+                console.log('Emergency contacts updated:', emergencyContacts);
+                renderEmergencyContacts();
+            });
+        }
+
+        async function loadEmergencyContactsFromFirebase() {
+            try {
+                const snapshot = await firebase.database().ref('emergencyContacts').once('value');
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    emergencyContacts = Array.isArray(data) ? data : Object.values(data);
+                    emergencyContacts.sort((a, b) => a.no - b.no);
+                }
+                renderEmergencyContacts();
+            } catch (error) {
+                console.error('Error loading emergency contacts:', error);
+            }
+        }
+
+        async function saveEmergencyContactsToFirebase() {
+            try {
+                await firebase.database().ref('emergencyContacts').set(emergencyContacts);
+                return true;
+            } catch (error) {
+                console.error('Error:', error);
+                return false;
+            }
+        }
+
+        function showAddEmergencyContactModal() {
+            const modalId = 'add-contact-modal-' + Date.now();
+            const modal = document.createElement('div');
+            modal.id = modalId;
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            modal.innerHTML = `
+                <div style="background:white;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+                    <h2 style="margin-top:0;color:#333;">เพิ่มผู้ติดต่อฉุกเฉินใหม่</h2>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ชื่อ:</label>
+                        <input type="text" id="newContactName" class="form-control" placeholder="กรุณากรอกชื่อ" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ตำแหน่ง:</label>
+                        <input type="text" id="newContactPosition" class="form-control" placeholder="กรุณากรอกตำแหน่ง" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">เบอร์โทร:</label>
+                        <input type="text" id="newContactPhone" class="form-control" placeholder="กรุณากรอกเบอร์โทร" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ต่อ (ไม่บังคับ):</label>
+                        <input type="text" id="newContactExtension" class="form-control" placeholder="กรุณากรอกเบอร์ต่อ" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ภายใน:</label>
+                        <input type="text" id="newContactInternal" class="form-control" placeholder="กรุณากรอกเบอร์ภายใน" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button style="padding:8px 16px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;cursor:pointer;" onclick="document.getElementById('${modalId}').remove();">ยกเลิก</button>
+                        <button style="padding:8px 16px;border:none;border-radius:4px;background:#3562dc;color:white;cursor:pointer;" onclick="saveNewEmergencyContact('${modalId}');">เพิ่ม</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('newContactName').focus();
+        }
+
+        function saveNewEmergencyContact(modalId) {
+            const name = document.getElementById('newContactName').value.trim();
+            const position = document.getElementById('newContactPosition').value.trim();
+            const phone = document.getElementById('newContactPhone').value.trim();
+            const extension = document.getElementById('newContactExtension').value.trim();
+            const internal = document.getElementById('newContactInternal').value.trim();
+            if (!name || !position || !phone) {
+                showNotification('Error', 'Please fill all required fields');
+                return;
+            }
+            const newNo = Math.max(...emergencyContacts.map(c => c.no || 0), 0) + 1;
+            emergencyContacts.push({ no: newNo, name, position, phone, extension, internal });
+            saveEmergencyContactsToFirebase().then(() => {
+                document.getElementById(modalId).remove();
+                renderEmergencyContacts();
+                showNotification('Success', 'Emergency contact added successfully');
+            });
+        }
+
+        function showEditEmergencyContactModal(contactNo) {
+            const contact = emergencyContacts.find(c => c.no === contactNo);
+            if (!contact) return;
+            const modalId = 'edit-contact-modal-' + contactNo;
+            const modal = document.createElement('div');
+            modal.id = modalId;
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            modal.innerHTML = `
+                <div style="background:white;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+                    <h2 style="margin-top:0;color:#333;">แก้ไขผู้ติดต่อฉุกเฉิน</h2>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ชื่อ:</label>
+                        <input type="text" id="editContactName" class="form-control" value="${contact.name}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ตำแหน่ง:</label>
+                        <input type="text" id="editContactPosition" class="form-control" value="${contact.position}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">เบอร์โทร:</label>
+                        <input type="text" id="editContactPhone" class="form-control" value="${contact.phone}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ต่อ (ไม่บังคับ):</label>
+                        <input type="text" id="editContactExtension" class="form-control" value="${contact.extension || ''}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-weight:600;margin-bottom:4px;">ภายใน:</label>
+                        <input type="text" id="editContactInternal" class="form-control" value="${contact.internal}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;" />
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button style="padding:8px 16px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;cursor:pointer;" onclick="document.getElementById('${modalId}').remove();">ยกเลิก</button>
+                        <button style="padding:8px 16px;border:none;border-radius:4px;background:#3562dc;color:white;cursor:pointer;" onclick="saveEditedEmergencyContact(${contactNo}, '${modalId}');">บันทึก</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('editContactName').focus();
+        }
+
+        function saveEditedEmergencyContact(contactNo, modalId) {
+            const name = document.getElementById('editContactName').value.trim();
+            const position = document.getElementById('editContactPosition').value.trim();
+            const phone = document.getElementById('editContactPhone').value.trim();
+            const extension = document.getElementById('editContactExtension').value.trim();
+            const internal = document.getElementById('editContactInternal').value.trim();
+            if (!name || !position || !phone) {
+                showNotification('Error', 'Please fill all required fields');
+                return;
+            }
+            const index = emergencyContacts.findIndex(c => c.no === contactNo);
+            if (index !== -1) {
+                emergencyContacts[index] = { no: contactNo, name, position, phone, extension, internal };
+                saveEmergencyContactsToFirebase().then(() => {
+                    document.getElementById(modalId).remove();
+                    renderEmergencyContacts();
+                    showNotification('Success', 'Emergency contact updated successfully');
+                });
+            }
+        }
+
+        function deleteEmergencyContact(contactNo) {
+            const contact = emergencyContacts.find(c => c.no === contactNo);
+            if (!contact) return;
+            const confirmed = confirm('Are you sure you want to delete "' + contact.name + '"?');
+            if (confirmed) {
+                emergencyContacts = emergencyContacts.filter(c => c.no !== contactNo);
+                saveEmergencyContactsToFirebase().then(() => {
+                    renderEmergencyContacts();
+                    showNotification('Success', 'Contact deleted successfully');
+                });
+            }
+        }
 
     </script>
 
