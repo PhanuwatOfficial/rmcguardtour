@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Location Tracker</title>
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfXfH_Tklv-kAsENkTroB4tHKC5zkrIUU"></script> -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Mitr:wght@200;300;400;500;600;700&family=Noto+Sans+Thai:wght@100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: "Kanit", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            color: black;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .card-header {
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            color: rgb(0, 0, 0);
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            /* เพิ่ม z-index เพื่อให้ marker คลิกได้ */
+            z-index: 1;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            /* border-left: 4px solid #667eea; */
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #666;
+            font-size: 1.1em;
+            word-break: break-all;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            color: rgb(0, 0, 0);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+        }
+
+        .history-item-time {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .history-item-coords {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .accuracy-bar {
+            background: #e9ecef;
+            border-radius: 5px;
+            height: 20px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .accuracy-fill {
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .distance-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Map Section -->
+        <div class="card">
+            <div class="card-header">Maps</div>
+            <div class="card-body">
+                <div id="map"></div>
+                <div id="mapStatus" class="status info" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Location Info Section -->
+        <div class="card">
+            <div class="card-header">ข้อมูลตำแหน่ง</div>
+            <div class="card-body">
+                <div id="statusMessage" class="status info">กดปุ่มเพื่อเริ่มบันทึกตำแหน่ง GPS</div>
+
+                <div class="info-section">
+                    <div class="info-label">Latitude</div>
+                    <div class="info-value" id="latitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">Longitude</div>
+                    <div class="info-value" id="longitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความแม่นยำ (เมตร)</div>
+                    <div class="info-value" id="accuracy">-</div>
+                    <div class="accuracy-bar">
+                        <div class="accuracy-fill" id="accuracyFill" style="width: 0%">-</div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความสูง (เมตร)</div>
+                    <div class="info-value" id="altitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความเร็ว (m/s)</div>
+                    <div class="info-value" id="speed">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">เวลา</div>
+                    <div class="info-value" id="timestamp">-</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="startTracking()">🟢 เริ่มติดตาม</button>
+                    <button class="btn-danger" onclick="stopTracking()">🔴 หยุด</button>
+                    <button class="btn-secondary" onclick="clearHistory()">🗑️ ล้างประวัติ</button>
+                    <button class="btn-primary" onclick="saveCurrentLocation()">📌 บันทึกตำแหน่ง</button>
+                    <label style="margin-left:10px;display:flex;align-items:center;">
+                        <input type="checkbox" id="fakeModeToggle" style="margin-right:5px;">
+                        Fake Map Mode
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="card">
+            <div class="card-header">📜 ประวัติตำแหน่ง</div>
+            <div class="card-body">
+                <h3 id="historyCount">บันทึก: 0</h3>
+                <div class="history-list" id="historyList">
+                    <div class="no-history">ยังไม่มีประวัติตำแหน่ง</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="startTracking()">🟢 เริ่มติดตาม</button>
+            <button class="btn-danger" onclick="stopTracking()">🔴 หยุด</button>
+            <button class="btn-secondary" onclick="clearHistory()">🗑️ ล้างประวัติ</button>
+            <button class="btn-primary" onclick="saveCurrentLocation()">📌 บันทึกตำแหน่ง</button>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="card">
+            <div class="card-header">📈 สถิติ</div>
+            <div class="card-body">
+                <div class="info-section">
+                    <div class="info-label">จำนวนบันทึกทั้งหมด</div>
+                    <div class="info-value" id="totalRecords">0</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความแม่นยำเฉลี่ย</div>
+                    <div class="info-value" id="avgAccuracy">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ระยะทางที่เดินทาง</div>
+                    <div class="info-value" id="totalDistance">0 เมตร</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">สถานะการติดตาม</div>
+                    <div class="info-value" id="trackingStatus">ไม่ทำงาน</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="exportData()">📥 ส่งออกข้อมูล</button>
+                    <button class="btn-secondary" onclick="downloadGPX()">📍 ดาวน์โหลด GPX</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-group" style="margin-top:20px;">
+        <button class="btn-primary" onclick="showQRCodeModal()">🔲 สร้าง QR Code</button>
+        <button class="btn-secondary" onclick="showQRScanModal()">📷 สแกน QR Code</button>
+    </div>
+
+    <!-- Modal สำหรับแสดง QR Code -->
+    <div id="qrcodeModal"
+        style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:9999;">
+        <div style="background:#fff;padding:30px 20px;border-radius:10px;max-width:90vw;text-align:center;">
+            <input type="text" id="qrInput" placeholder="กรอกข้อความที่ต้องการสร้าง QR"
+                style="width:80%;margin-bottom:10px;">
+            <div id="qrcode"></div>
+            <div style="margin-top:10px;">
+                <button onclick="generateQRFromInput()" class="btn-primary">สร้าง QR</button>
+                <button onclick="closeQRCodeModal()" class="btn-secondary">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับสแกน QR -->
+    <div id="qrscanModal"
+        style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:9999;">
+        <div style="background:#fff;padding:20px;border-radius:10px;max-width:95vw;text-align:center;">
+            <video id="qrVideo" width="320" height="240" style="border:1px solid #ccc;"></video>
+            <canvas id="qrCanvas" width="320" height="240" style="display:none;"></canvas>
+            <div style="margin-top:10px;">
+                <button onclick="closeQRScanModal()" class="btn-secondary">ปิด</button>
+            </div>
+            <div id="qrScanStatus" style="margin-top:10px;color:#e74c3c;"></div>
+        </div>
+    </div>
+
+    <div class="button-group" style="margin-top:10px;">
+        <button class="btn-secondary" onclick="loadLocationReport()">📊 ดูรายงานย้อนหลัง</button>
+    </div>
+
+    <div class="button-group" style="margin-top:10px;">
+        <select id="routeStart"></select>
+        <select id="routeEnd"></select>
+        <button class="btn-primary" onclick="saveRoute()">🛣️ บันทึกเส้นทาง</button>
+        <button class="btn-secondary" onclick="showRouteMap()">🗺️ ดูเส้นทางย้อนหลัง</button>
+    </div>
+    <div id="routeMapContainer" style="margin-top:20px;display:none;">
+        <div style="font-weight:bold;margin-bottom:5px;">แผนที่เส้นทางย้อนหลัง</div>
+        <div id="routeMap" style="width:100%;height:400px;border-radius:10px;"></div>
+    </div>
+
+    <script>
+
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5ZWVYevzL0Qj-H_jiVIL7WyH0vOp1kLs",
+            authDomain: "test2-a3a49.firebaseapp.com",
+            databaseURL: "https://test2-a3a49-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "test2-a3a49",
+            storageBucket: "test2-a3a49.firebasestorage.app",
+            messagingSenderId: "210722067503",
+            appId: "1:210722067503:web:069f168981aa965392a2da",
+            measurementId: "G-FEDYDSVGZC"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        // Configuration
+        const CONFIG = {
+            updateInterval: 10000, // milliseconds
+            maxHistoryRecords: 100,
+            accuracyThreshold: 50 // meters
+        };
+
+        // Global variables
+        let map;
+        let marker;
+        let accuracyCircle;
+        let polyline;
+        let watchId = null;
+        let locations = [];
+        let isTracking = false;
+        let totalDistance = 0;
+
+        // Initialize map
+        function initMap() {
+            const defaultLocation = [13.7563, 100.5018]; // Bangkok, Thailand
+            map = L.map('map').setView(defaultLocation, 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            polyline = L.polyline([], { color: '#667eea', weight: 3 }).addTo(map);
+
+            showMapStatus('แผนที่พร้อมใช้งาน', 'success');
+        }
+
+        let isFakeMode = false;
+        document.getElementById('fakeModeToggle').addEventListener('change', function () {
+            isFakeMode = this.checked;
+            showStatus(isFakeMode ? 'โหมด Fake Map เปิดอยู่' : 'โหมด Fake Map ปิดแล้ว', 'info');
+        });
+
+        // Start tracking
+        window.startTracking = function () {
+            if (isTracking) {
+                showStatus('การติดตามกำลังทำงานอยู่แล้ว', 'warning');
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                showStatus('อุปกรณ์นี้ไม่รองรับ GPS', 'error');
+                return;
+            }
+
+            showStatus('กำลังค้นหาตำแหน่ง...', 'info');
+            document.getElementById('trackingStatus').textContent = 'ทำงาน';
+
+            isTracking = true;
+
+            if (isFakeMode) {
+                // ใช้ตำแหน่งจริงครั้งแรก แล้วสุ่มใกล้เคียงในครั้งถัดไป
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    let baseLat = position.coords.latitude;
+                    let baseLng = position.coords.longitude;
+                    let fakeInterval = setInterval(function () {
+                        if (!isTracking) {
+                            clearInterval(fakeInterval);
+                            return;
+                        }
+                        // สุ่มตำแหน่งใกล้เคียง (±0.0005 ~ 50m)
+                        let lat = baseLat + (Math.random() - 0.5) * 0.001;
+                        let lng = baseLng + (Math.random() - 0.5) * 0.001;
+                        let fakePosition = {
+                            coords: {
+                                latitude: lat,
+                                longitude: lng,
+                                accuracy: 10 + Math.random() * 10,
+                                altitude: null,
+                                speed: 0
+                            },
+                            timestamp: Date.now()
+                        };
+                        handlePosition(fakePosition);
+                    }, CONFIG.updateInterval);
+
+                    // เก็บ interval id เพื่อหยุดตอน stopTracking
+                    window._fakeInterval = fakeInterval;
+                }, function (error) {
+                    showStatus('ไม่สามารถใช้ Fake Mode ได้: ' + error.message, 'error');
+                }, { enableHighAccuracy: true });
+            } else {
+                // Watch position with high accuracy
+                watchId = navigator.geolocation.watchPosition(
+                    handlePosition,
+                    handleError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            }
+        };
+
+        // Stop tracking
+        window.stopTracking = function () {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (window._fakeInterval) {
+                clearInterval(window._fakeInterval);
+                window._fakeInterval = null;
+            }
+            isTracking = false;
+            document.getElementById('trackingStatus').textContent = 'ไม่ทำงาน';
+            showStatus('หยุดติดตามแล้ว', 'info');
+        };
+        // Handle position
+        function handlePosition(position) {
+            const coords = position.coords;
+
+            const location = {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                accuracy: Math.round(coords.accuracy),
+                altitude: coords.altitude ? Math.round(coords.altitude) : null,
+                speed: coords.speed ? Math.round(coords.speed * 3.6) : 0, // Convert to km/h
+                timestamp: new Date()
+            };
+
+            // Update UI
+            document.getElementById('latitude').textContent = coords.latitude.toFixed(6);
+            document.getElementById('longitude').textContent = coords.longitude.toFixed(6);
+            document.getElementById('accuracy').textContent = location.accuracy + ' m';
+            document.getElementById('altitude').textContent = location.altitude ? location.altitude + ' m' : '-';
+            document.getElementById('speed').textContent = location.speed + ' km/h';
+            document.getElementById('timestamp').textContent = location.timestamp.toLocaleString('th-TH');
+
+            // Update accuracy bar
+            const accuracyPercent = Math.max(0, 100 - (location.accuracy / 2));
+            document.getElementById('accuracyFill').style.width = accuracyPercent + '%';
+            document.getElementById('accuracyFill').textContent = location.accuracy + 'm';
+
+            // Add to history
+            addToHistory(location);
+
+            // Update map
+            updateMap(coords.latitude, coords.longitude, location.accuracy);
+
+            // Calculate distance
+            if (locations.length > 0) {
+                const lastLoc = locations[locations.length - 1];
+                const distance = calculateDistance(
+                    lastLoc.latitude, lastLoc.longitude,
+                    coords.latitude, coords.longitude
+                );
+                totalDistance += distance;
+            }
+
+            locations.push(location);
+
+            // Keep only max records
+            if (locations.length > CONFIG.maxHistoryRecords) {
+                locations.shift();
+            }
+
+            updateStats();
+            showStatus('ตำแหน่งอัปเดตแล้ว', 'success');
+        }
+
+        // Handle errors
+        function handleError(error) {
+            let errorMsg = '';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = 'ไม่ได้รับอนุญาตให้เข้าถึง GPS';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = 'ไม่สามารถหาตำแหน่ง GPS ได้';
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = 'การค้นหา GPS หมดเวลา';
+                    break;
+                default:
+                    errorMsg = 'เกิดข้อผิดพลาด: ' + error.message;
+            }
+            showStatus(errorMsg, 'error');
+        }
+
+        // Update map
+        function updateMap(lat, lng, accuracy) {
+            const location = [lat, lng];
+
+            // Center map
+            map.setView(location);
+
+            // Remove old marker
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            if (accuracyCircle) {
+                map.removeLayer(accuracyCircle);
+            }
+
+            // Add new marker
+            marker = L.circleMarker(location, {
+                radius: 8,
+                color: '#fff',
+                fillColor: '#667eea',
+                fillOpacity: 1,
+                weight: 2
+            }).addTo(map);
+
+            // Add accuracy circle
+            accuracyCircle = L.circle(location, {
+                radius: accuracy,
+                color: '#667eea',
+                fillColor: '#667eea',
+                fillOpacity: 0.1,
+                weight: 1
+            }).addTo(map);
+
+            // Add point to polyline
+            polyline.addLatLng(location);
+        }
+
+        // Add to history
+        function addToHistory(location) {
+            const historyList = document.getElementById('historyList');
+
+            if (historyList.querySelector('.no-history')) {
+                historyList.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="history-item-time">${location.timestamp.toLocaleTimeString('th-TH')}</div>
+                <div class="history-item-coords">
+                    Lat: ${location.latitude.toFixed(6)}, Lng: ${location.longitude.toFixed(6)}<br>
+                    Accuracy: ${location.accuracy}m
+                </div>
+            `;
+
+            historyList.insertBefore(item, historyList.firstChild);
+
+            // Limit displayed items
+            while (historyList.children.length > 20) {
+                historyList.removeChild(historyList.lastChild);
+            }
+
+            document.getElementById('historyCount').textContent = `บันทึก: ${locations.length}`;
+        }
+
+        // Clear history
+        window.clearHistory = function () {
+            if (confirm('ต้องการล้างประวัติทั้งหมดหรือไม่?')) {
+                locations = [];
+                totalDistance = 0;
+                document.getElementById('historyList').innerHTML = '<div class="no-history">ยังไม่มีประวัติตำแหน่ง</div>';
+                document.getElementById('historyCount').textContent = 'บันทึก: 0';
+                updateStats();
+                showStatus('ล้างประวัติแล้ว', 'success');
+            }
+        };
+
+        // Calculate distance using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalRecords').textContent = locations.length;
+
+            if (locations.length > 0) {
+                const avgAccuracy = Math.round(
+                    locations.reduce((sum, loc) => sum + loc.accuracy, 0) / locations.length
+                );
+                document.getElementById('avgAccuracy').textContent = avgAccuracy + ' m';
+            } else {
+                document.getElementById('avgAccuracy').textContent = '-';
+            }
+
+            document.getElementById('totalDistance').textContent = (totalDistance / 1000).toFixed(2) + ' km';
+        }
+
+        // Export data
+        window.exportData = function () {
+            if (locations.length === 0) {
+                showStatus('ไม่มีข้อมูลให้ส่งออก', 'warning');
+                return;
+            }
+
+            const data = {
+                exportDate: new Date().toISOString(),
+                totalLocations: locations.length,
+                totalDistance: totalDistance,
+                locations: locations
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gps_data_${new Date().getTime()}.json`;
+            link.click();
+
+            showStatus('ส่งออกข้อมูลเรียบร้อย', 'success');
+        };
+
+        // Download GPX format
+        window.downloadGPX = function () {
+            if (locations.length === 0) {
+                showStatus('ไม่มีข้อมูลให้ส่งออก', 'warning');
+                return;
+            }
+
+            let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+            <gpx version="1.1" creator="GPS Location Tracker">
+            <trk>
+                <name>GPS Track</name>
+                <trkseg>`;
+
+            locations.forEach(loc => {
+                gpx += `
+                <trkpt lat="${loc.latitude}" lon="${loc.longitude}">
+                    <ele>${loc.altitude || 0}</ele>
+                    <time>${loc.timestamp.toISOString()}</time>
+                    <extensions>
+                    <accuracy>${loc.accuracy}</accuracy>
+                    </extensions>
+                </trkpt>`;
+            });
+
+            gpx += `
+                </trkseg>
+            </trk>
+            </gpx>`;
+
+            const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gps_track_${new Date().getTime()}.gpx`;
+            link.click();
+
+            showStatus('ดาวน์โหลด GPX เรียบร้อย', 'success');
+        };
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        // Show map status
+        function showMapStatus(message, type) {
+            const statusDiv = document.getElementById('mapStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function () {
+            initMap();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', function () {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+
+        let savedMarkers = [];
+
+        // ฟังก์ชันบันทึกตำแหน่งปัจจุบัน
+        window.saveCurrentLocation = function () {
+            if (locations.length === 0) {
+                showStatus('ยังไม่มีตำแหน่งปัจจุบันให้บันทึก', 'warning');
+                return;
+            }
+            const lastLoc = locations[locations.length - 1];
+            // สร้าง marker สีแดง
+            const marker = L.marker([lastLoc.latitude, lastLoc.longitude], {
+                title: 'ตำแหน่งที่บันทึก',
+                icon: L.icon({
+                    iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-red.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            marker.bindPopup(
+                `ตำแหน่งที่บันทึก<br>Lat: ${lastLoc.latitude.toFixed(6)}<br>Lng: ${lastLoc.longitude.toFixed(6)}<br>เวลา: ${lastLoc.timestamp.toLocaleString('th-TH')}`
+            );
+            savedMarkers.push(marker);
+            showStatus('บันทึกตำแหน่งแล้ว', 'success');
+
+            // บันทึกลง Firebase
+            db.ref('locations').push({
+                latitude: lastLoc.latitude,
+                longitude: lastLoc.longitude,
+                accuracy: lastLoc.accuracy,
+                altitude: lastLoc.altitude,
+                speed: lastLoc.speed,
+                timestamp: lastLoc.timestamp.toISOString()
+            });
+        };
+
+        // ดึง report ย้อนหลังและแสดง pin บน map
+        window.loadLocationReport = function () {
+            db.ref('locations').once('value').then(snapshot => {
+                const data = snapshot.val();
+                if (!data) {
+                    showStatus('ไม่มีข้อมูลย้อนหลัง', 'warning');
+                    return;
+                }
+                // ลบหมุดเก่า
+                savedMarkers.forEach(m => map.removeLayer(m));
+                savedMarkers = [];
+                let bounds = [];
+                Object.values(data).forEach(loc => {
+                    const latlng = [loc.latitude, loc.longitude];
+                    const marker = L.marker(latlng, {
+                        title: 'ตำแหน่งย้อนหลัง',
+                        icon: L.icon({
+                            iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-blue.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).addTo(map);
+                    marker.bindPopup(
+                        `ตำแหน่งย้อนหลัง<br>Lat: ${parseFloat(loc.latitude).toFixed(6)}<br>Lng: ${parseFloat(loc.longitude).toFixed(6)}<br>เวลา: ${loc.timestamp ? new Date(loc.timestamp).toLocaleString('th-TH') : '-'}`
+                    );
+                    savedMarkers.push(marker);
+                    bounds.push(latlng);
+                });
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [40, 40] });
+                }
+                showStatus('โหลดรายงานย้อนหลังแล้ว', 'success');
+                populateRouteDropdowns();
+            });
+        };
+
+        // ===== QR CODE GENERATION =====
+        window.showQRCodeModal = function () {
+            document.getElementById('qrcodeModal').style.display = 'flex';
+            document.getElementById('qrcode').innerHTML = '';
+            document.getElementById('qrInput').value = '';
+        };
+
+        window.generateQRFromInput = function () {
+            const text = document.getElementById('qrInput').value.trim();
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = '';
+            if (!text) {
+                qrDiv.innerHTML = '<div style="color:red;">กรุณากรอกข้อความ</div>';
+                return;
+            }
+            QRCode.toCanvas(document.createElement('canvas'), text, { width: 220 }, function (error, canvas) {
+                if (error) {
+                    qrDiv.textContent = 'เกิดข้อผิดพลาดในการสร้าง QR';
+                } else {
+                    qrDiv.appendChild(canvas);
+                }
+            });
+        };
+
+        window.closeQRCodeModal = function () {
+            document.getElementById('qrcodeModal').style.display = 'none';
+        };
+
+        // ===== QR CODE SCAN =====
+        let qrScanStream = null;
+        window.showQRScanModal = function () {
+            document.getElementById('qrscanModal').style.display = 'flex';
+            startQRScan();
+        };
+        window.closeQRScanModal = function () {
+            stopQRScan();
+            document.getElementById('qrscanModal').style.display = 'none';
+            document.getElementById('qrScanStatus').textContent = '';
+        };
+
+        function startQRScan() {
+            const video = document.getElementById('qrVideo');
+            const canvas = document.getElementById('qrCanvas');
+            const ctx = canvas.getContext('2d');
+            document.getElementById('qrScanStatus').textContent = 'กำลังเปิดกล้อง...';
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function (stream) {
+                    qrScanStream = stream;
+                    video.srcObject = stream;
+                    video.setAttribute("playsinline", true);
+                    video.play();
+                    requestAnimationFrame(scanFrame);
+                })
+                .catch(function (err) {
+                    document.getElementById('qrScanStatus').textContent = 'ไม่สามารถเปิดกล้องได้: ' + err;
+                });
+
+            function scanFrame() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height);
+                    if (code) {
+                        // หยุดกล้อง
+                        stopQRScan();
+                        document.getElementById('qrScanStatus').textContent = 'พบ QR แล้ว!';
+                        // แปลงข้อมูลและบันทึกหมุด
+                        try {
+                            const data = JSON.parse(code.data);
+                            addScannedLocationToMap(data);
+                        } catch (e) {
+                            showStatus('QR ไม่ถูกต้อง', 'error');
+                        }
+                        setTimeout(() => window.closeQRScanModal(), 1200);
+                        return;
+                    }
+                }
+                if (qrScanStream) requestAnimationFrame(scanFrame);
+            }
+        }
+        function stopQRScan() {
+            if (qrScanStream) {
+                qrScanStream.getTracks().forEach(track => track.stop());
+                qrScanStream = null;
+            }
+        }
+
+        // เพิ่มหมุดจาก QR ลง map
+        function addScannedLocationToMap(data) {
+            if (!data.latitude || !data.longitude) {
+                showStatus('QR ไม่มีข้อมูลพิกัด', 'error');
+                return;
+            }
+            // สร้าง marker สีเขียว
+            const marker = L.marker([data.latitude, data.longitude], {
+                title: 'ตำแหน่งจาก QR',
+                icon: L.icon({
+                    iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            marker.bindPopup(
+                `ตำแหน่งจาก QR<br>Lat: ${parseFloat(data.latitude).toFixed(6)}<br>Lng: ${parseFloat(data.longitude).toFixed(6)}<br>เวลา: ${data.timestamp ? new Date(data.timestamp).toLocaleString('th-TH') : '-'}`
+            );
+            savedMarkers.push(marker);
+            showStatus('บันทึกหมุดจาก QR แล้ว', 'success');
+        }
+
+        //prompt iconUrl ใช้ fontawesome แทนได้ไหม เพื่อความคมชัด
+
+        function populateRouteDropdowns() {
+            db.ref('locations').once('value').then(snapshot => {
+                const data = snapshot.val();
+                const startSel = document.getElementById('routeStart');
+                const endSel = document.getElementById('routeEnd');
+                startSel.innerHTML = '';
+                endSel.innerHTML = '';
+                if (!data) return;
+                Object.entries(data).forEach(([key, loc], idx) => {
+                    const label = `${idx + 1}: ${parseFloat(loc.latitude).toFixed(5)},${parseFloat(loc.longitude).toFixed(5)} (${loc.timestamp ? new Date(loc.timestamp).toLocaleString('th-TH') : '-'})`;
+                    const opt1 = document.createElement('option');
+                    opt1.value = key;
+                    opt1.textContent = label;
+                    const opt2 = opt1.cloneNode(true);
+                    startSel.appendChild(opt1);
+                    endSel.appendChild(opt2);
+                });
+            });
+        }
+        window.addEventListener('load', populateRouteDropdowns);
+
+        window.saveRoute = function () {
+            const startKey = document.getElementById('routeStart').value;
+            const endKey = document.getElementById('routeEnd').value;
+            if (!startKey || !endKey || startKey === endKey) {
+                showStatus('กรุณาเลือกหมุดต้นทางและปลายทางที่แตกต่างกัน', 'warning');
+                return;
+            }
+            db.ref('locations').once('value').then(snapshot => {
+                const data = snapshot.val();
+                if (!data || !data[startKey] || !data[endKey]) {
+                    showStatus('ข้อมูลหมุดไม่ถูกต้อง', 'error');
+                    return;
+                }
+                // เก็บ route เป็น array ของจุด (ต้นทาง, ปลายทาง)
+                db.ref('routes').push({
+                    start: data[startKey],
+                    end: data[endKey],
+                    createdAt: new Date().toISOString()
+                }).then(() => {
+                    showStatus('บันทึกเส้นทางแล้ว', 'success');
+                });
+            });
+        };
+
+
+        window.showRouteMap = function () {
+            document.getElementById('routeMapContainer').style.display = 'block';
+
+            // รอให้ element render เสร็จก่อน
+            setTimeout(() => {
+                // ตรวจสอบว่า element มีอยู่
+                const routeMapContainer = document.getElementById('routeMap');
+                if (!routeMapContainer) {
+                    showStatus('ไม่พบ container สำหรับแผนที่เส้นทาง', 'error');
+                    return;
+                }
+
+                // สร้างแผนที่ใหม่
+                if (window.routeMap) {
+                    window.routeMap.remove();
+                }
+                window.routeMap = L.map('routeMap').setView([13.7563, 100.5018], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(window.routeMap);
+
+                db.ref('routes').once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    if (!data) {
+                        showStatus('ไม่มีเส้นทางย้อนหลัง', 'warning');
+                        return;
+                    }
+                    Object.values(data).forEach(route => {
+                        const latlngs = [
+                            [route.start.latitude, route.start.longitude],
+                            [route.end.latitude, route.end.longitude]
+                        ];
+                        // วาดเส้น
+                        L.polyline(latlngs, { color: 'orange', weight: 5 }).addTo(window.routeMap);
+                        // หมุดต้นทาง
+                        L.marker(latlngs[0], {
+                            icon: L.icon({
+                                iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-violet.png',
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            })
+                        }).addTo(window.routeMap).bindPopup('ต้นทาง');
+                        // หมุดปลายทาง
+                        L.marker(latlngs[1], {
+                            icon: L.icon({
+                                iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-yellow.png',
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            })
+                        }).addTo(window.routeMap).bindPopup('ปลายทาง');
+                    });
+                    showStatus('โหลดเส้นทางบนแผนที่แล้ว', 'success');
+                });
+            }, 100);
+        };
+    </script>
+</body>
+
+</html>

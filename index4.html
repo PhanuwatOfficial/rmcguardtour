@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแสกนจุดตรวจในโรงงาน</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://unpkg.com/cloudinary@1.36.0/cloudinary-core/cloudinary-core-shrinkwrap.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .logo i {
+            font-size: 1.8rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-role {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .logout-btn {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Main Content */
+        main {
+            padding: 30px 0;
+        }
+        
+        /* View Styles */
+        .view {
+            display: none;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        /* Login View */
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+        
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+        
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .role-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .role-option.active {
+            border-color: var(--secondary);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-block {
+            width: 100%;
+        }
+        
+        /* Dashboard Views */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-title {
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+        
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Scanner View */
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .scanner-video-container {
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        #scanner-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .scanner-frame {
+            width: 70%;
+            height: 70%;
+            border: 3px solid var(--secondary);
+            border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+        }
+        
+        .scan-result {
+            width: 100%;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Form Styles */
+        .checkpoint-form, .round-form, .emergency-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning);
+        }
+        
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+        
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: var(--secondary);
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--secondary);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Emergency Button */
+        .emergency-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+            cursor: pointer;
+            font-size: 1.5rem;
+            z-index: 99;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .emergency-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Image Preview */
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .image-preview.show {
+            display: block;
+        }
+        
+        /* Notification Styles */
+        .notification-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-container">
+            <div class="logo">
+                <i class="fas fa-clipboard-check"></i>
+                <span>ระบบแสกนจุดตรวจในโรงงาน</span>
+            </div>
+            <div class="user-info" id="user-info" style="display: none;">
+                <div class="user-role" id="user-role">กำลังโหลด...</div>
+                <button class="logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Login View -->
+        <div class="view" id="login-view">
+            <div class="login-container">
+                <h2 class="login-title">เข้าสู่ระบบ</h2>
+                <div class="role-selector">
+                    <div class="role-option active" data-role="security">รปภ.</div>
+                    <div class="role-option" data-role="safety">จป.</div>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">อีเมล</label>
+                        <input type="email" id="email" class="form-control" placeholder="กรอกอีเมล" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">รหัสผ่าน</label>
+                        <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน" required>
+                    </div>
+                    <button type="submit" class="btn btn-block">เข้าสู่ระบบ</button>
+                </form>
+                <div class="demo-credentials" style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">ข้อมูลสำหรับทดสอบระบบ:</p>
+                    <p style="font-size: 0.85rem; margin-bottom: 5px;"><strong>รปภ.</strong> - อีเมล: security@test.com, รหัสผ่าน: 123456</p>
+                    <p style="font-size: 0.85rem;"><strong>จป.</strong> - อีเมล: safety@test.com, รหัสผ่าน: 123456</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Dashboard View -->
+        <div class="view active" id="security-dashboard">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">หน้าหลักผู้ตรวจการณ์ (รปภ.)</h2>
+                <div class="current-time" id="current-time"></div>
+            </div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="scanner">แสกนจุดตรวจ</button>
+                <button class="nav-tab" data-tab="today-rounds">รอบตรวจวันนี้</button>
+                <button class="nav-tab" data-tab="emergency-records">บันทึกเหตุฉุกเฉิน</button>
+                <button class="nav-tab" data-tab="notifications">การแจ้งเตือน</button>
+            </div>
+            
+            <!-- Scanner Tab -->
+            <div class="tab-content active" data-tab="scanner">
+                <div class="scanner-container">
+                    <div class="scanner-video-container">
+                        <video id="scanner-video"></video>
+                        <div class="scanner-overlay">
+                            <div class="scanner-frame"></div>
+                        </div>
+                    </div>
+                    <button id="start-scanner" class="btn btn-success">
+                        <i class="fas fa-camera"></i> เริ่มแสกน QR Code
+                    </button>
+                    <button id="stop-scanner" class="btn btn-danger" style="display: none;">
+                        <i class="fas fa-stop"></i> หยุดแสกน
+                    </button>
+                    
+                    <div class="scan-result" id="scan-result" style="display: none;">
+                        <h3>ผลการแสกน</h3>
+                        <div id="scan-details"></div>
+                        <div class="form-actions" id="scan-actions" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Today Rounds Tab -->
+            <div class="tab-content" data-tab="today-rounds">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-day"></i> รอบตรวจสอบสำหรับวันนี้
+                    </h3>
+                    <div id="today-rounds-list">
+                        <p>กำลังโหลดข้อมูล...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Emergency Records Tab -->
+            <div class="tab-content" data-tab="emergency-records">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i> บันทึกเหตุฉุกเฉิน
+                    </h3>
+                    <button class="btn btn-warning" id="create-emergency-btn">
+                        <i class="fas fa-plus"></i> สร้างบันทึกเหตุฉุกเฉิน
+                    </button>
+                    
+                    <div class="table-container" style="margin-top: 20px;">
+                        <table id="emergency-table">
+                            <thead>
+                                <tr>
+                                    <th>วันที่</th>
+                                    <th>ประเภท</th>
+                                    <th>รายละเอียด</th>
+                                    <th>สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emergency-table-body">
+                                <tr><td colspan="4">กำลังโหลดข้อมูล...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications Tab -->
+            <div class="tab-content" data-tab="notifications">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-bell"></i> การแจ้งเตือน
+                    </h3>
+                    <div class="notification-list" id="notification-list">
+                        <p>กำลังโหลดการแจ้งเตือน...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Safety Dashboard View -->
+        <div class="view" id="safety-dashboard">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">หน้าหลักผู้ดูแลระบบ (จป.)</h2>
+                <button class="btn btn-success" id="create-checkpoint-btn">
+                    <i class="fas fa-plus"></i> เพิ่มจุดตรวจใหม่
+                </button>
+            </div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="checkpoints">จัดการจุดตรวจ</button>
+                <button class="nav-tab" data-tab="inspection-rounds">จัดการรอบตรวจ</button>
+                <button class="nav-tab" data-tab="emergency-management">จัดการเหตุฉุกเฉิน</button>
+                <button class="nav-tab" data-tab="user-management">จัดการผู้ใช้งาน</button>
+                <button class="nav-tab" data-tab="system-notifications">การแจ้งเตือนระบบ</button>
+            </div>
+            
+            <!-- Checkpoints Tab -->
+            <div class="tab-content active" data-tab="checkpoints">
+                <div class="table-container">
+                    <table id="checkpoints-table">
+                        <thead>
+                            <tr>
+                                <th>ชื่อจุดตรวจ</th>
+                                <th>ตำแหน่ง</th>
+                                <th>คิวอาร์โค้ด</th>
+                                <th>รูปภาพ</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checkpoints-table-body">
+                            <tr><td colspan="5">กำลังโหลดข้อมูลจุดตรวจ...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Inspection Rounds Tab -->
+            <div class="tab-content" data-tab="inspection-rounds">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-clock"></i> รอบตรวจสอบ
+                    </h3>
+                    <button class="btn btn-success" id="create-round-btn">
+                        <i class="fas fa-plus"></i> เพิ่มรอบตรวจใหม่
+                    </button>
+                    
+                    <div class="table-container" style="margin-top: 20px;">
+                        <table id="rounds-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อรอบตรวจ</th>
+                                    <th>เวลาตรวจ</th>
+                                    <th>จุดตรวจทั้งหมด</th>
+                                    <th>แจ้งเตือนล่วงหน้า</th>
+                                    <th>การดำเนินการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rounds-table-body">
+                                <tr><td colspan="5">กำลังโหลดข้อมูลรอบตรวจ...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Emergency Management Tab -->
+            <div class="tab-content" data-tab="emergency-management">
+                <div class="table-container">
+                    <table id="emergency-management-table">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>ผู้รายงาน</th>
+                                <th>ประเภท</th>
+                                <th>รายละเอียด</th>
+                                <th>สถานะ</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emergency-management-table-body">
+                            <tr><td colspan="6">กำลังโหลดข้อมูลเหตุฉุกเฉิน...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- User Management Tab -->
+            <div class="tab-content" data-tab="user-management">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i> จัดการผู้ใช้งาน
+                    </h3>
+                    <button class="btn btn-success" id="create-user-btn">
+                        <i class="fas fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่
+                    </button>
+                    
+                    <div class="table-container" style="margin-top: 20px;">
+                        <table id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อ</th>
+                                    <th>อีเมล</th>
+                                    <th>บทบาท</th>
+                                    <th>สถานะ</th>
+                                    <th>การดำเนินการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr><td colspan="5">กำลังโหลดข้อมูลผู้ใช้งาน...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Notifications Tab -->
+            <div class="tab-content" data-tab="system-notifications">
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-cog"></i> การแจ้งเตือนระบบ
+                    </h3>
+                    <div class="form-group">
+                        <label>เวลาแจ้งเตือนล่วงหน้า (นาที)</label>
+                        <input type="number" id="notification-time" class="form-control" value="15" min="1" max="60">
+                    </div>
+                    <button class="btn btn-success" id="save-notification-settings">
+                        <i class="fas fa-save"></i> บันทึกการตั้งค่า
+                    </button>
+                    
+                    <div class="notification-list" id="system-notification-list" style="margin-top: 30px;">
+                        <h4>ประวัติการแจ้งเตือนระบบ</h4>
+                        <div id="system-notifications">
+                            <p>กำลังโหลดประวัติการแจ้งเตือน...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Emergency Button (Only for Security Dashboard) -->
+    <button class="emergency-btn" id="emergency-floating-btn" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+    </button>
+    
+    <!-- Modals -->
+    <div class="modal" id="emergency-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>รายงานเหตุฉุกเฉิน</h3>
+                <button class="modal-close" id="close-emergency-modal">&times;</button>
+            </div>
+            <form id="emergency-form">
+                <div class="form-group">
+                    <label>ประเภทเหตุฉุกเฉิน</label>
+                    <select id="emergency-type" class="form-control" required>
+                        <option value="">เลือกประเภทเหตุฉุกเฉิน</option>
+                        <option value="fire">ไฟไหม้</option>
+                        <option value="accident">อุบัติเหตุ</option>
+                        <option value="equipment">อุปกรณ์ชำรุด</option>
+                        <option value="security">ความปลอดภัย</option>
+                        <option value="other">อื่นๆ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>รายละเอียด</label>
+                    <textarea id="emergency-description" class="form-control" rows="5" placeholder="อธิบายเหตุฉุกเฉินที่เกิดขึ้น" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ระดับความรุนแรง</label>
+                    <select id="emergency-severity" class="form-control" required>
+                        <option value="low">ต่ำ</option>
+                        <option value="medium" selected>กลาง</option>
+                        <option value="high">สูง</option>
+                        <option value="critical">วิกฤต</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">รายงานเหตุฉุกเฉิน</button>
+                    <button type="button" class="btn" id="cancel-emergency">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Checkpoint Modal -->
+    <div class="modal" id="checkpoint-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="checkpoint-modal-title">เพิ่มจุดตรวจใหม่</h3>
+                <button class="modal-close" id="close-checkpoint-modal">&times;</button>
+            </div>
+            <form id="checkpoint-form">
+                <input type="hidden" id="checkpoint-id">
+                <div class="form-group">
+                    <label>ชื่อจุดตรวจ</label>
+                    <input type="text" id="checkpoint-name" class="form-control" placeholder="กรอกชื่อจุดตรวจ" required>
+                </div>
+                <div class="form-group">
+                    <label>ตำแหน่ง</label>
+                    <input type="text" id="checkpoint-location" class="form-control" placeholder="กรอกตำแหน่ง" required>
+                </div>
+                <div class="form-group">
+                    <label>คำแนะนำในการตรวจสอบ</label>
+                    <textarea id="checkpoint-instructions" class="form-control" rows="3" placeholder="คำแนะนำสำหรับผู้ตรวจสอบ"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>รูปภาพจุดตรวจ (อัปโหลดไปยัง Cloudinary)</label>
+                    <input type="file" id="checkpoint-image" class="form-control" accept="image/*">
+                    <img id="checkpoint-image-preview" class="image-preview" src="" alt="Preview">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success" id="checkpoint-submit-btn">บันทึกจุดตรวจ</button>
+                    <button type="button" class="btn" id="cancel-checkpoint">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Round Modal -->
+    <div class="modal" id="round-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="round-modal-title">เพิ่มรอบตรวจใหม่</h3>
+                <button class="modal-close" id="close-round-modal">&times;</button>
+            </div>
+            <form id="round-form">
+                <input type="hidden" id="round-id">
+                <div class="form-group">
+                    <label>ชื่อรอบตรวจ</label>
+                    <input type="text" id="round-name" class="form-control" placeholder="กรอกชื่อรอบตรวจ" required>
+                </div>
+                <div class="form-group">
+                    <label>เวลาตรวจ</label>
+                    <input type="time" id="round-time" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>จุดตรวจที่ต้องตรวจสอบ (เลือกได้หลายจุด)</label>
+                    <div id="checkpoint-selection">
+                        <p>กำลังโหลดจุดตรวจ...</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>วันในการตรวจสอบ</label>
+                    <div id="day-selection">
+                        <label><input type="checkbox" name="day" value="monday"> จันทร์</label>
+                        <label><input type="checkbox" name="day" value="tuesday"> อังคาร</label>
+                        <label><input type="checkbox" name="day" value="wednesday"> พุธ</label>
+                        <label><input type="checkbox" name="day" value="thursday"> พฤหัสบดี</label>
+                        <label><input type="checkbox" name="day" value="friday"> ศุกร์</label>
+                        <label><input type="checkbox" name="day" value="saturday"> เสาร์</label>
+                        <label><input type="checkbox" name="day" value="sunday"> อาทิตย์</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>แจ้งเตือนล่วงหน้า (นาที)</label>
+                    <input type="number" id="notification-before" class="form-control" value="15" min="1" max="120">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success" id="round-submit-btn">บันทึกรอบตรวจ</button>
+                    <button type="button" class="btn" id="cancel-round">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- User Modal -->
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="user-modal-title">เพิ่มผู้ใช้งานใหม่</h3>
+                <button class="modal-close" id="close-user-modal">&times;</button>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label>ชื่อ-สกุล</label>
+                    <input type="text" id="user-name" class="form-control" placeholder="กรอกชื่อ-สกุล" required>
+                </div>
+                <div class="form-group">
+                    <label>อีเมล</label>
+                    <input type="email" id="user-email" class="form-control" placeholder="กรอกอีเมล" required>
+                </div>
+                <div class="form-group">
+                    <label>รหัสผ่าน</label>
+                    <input type="password" id="user-password" class="form-control" placeholder="กรอกรหัสผ่าน">
+                </div>
+                <div class="form-group">
+                    <label>บทบาท</label>
+                    <select id="user-role-select" class="form-control" required>
+                        <option value="">เลือกบทบาท</option>
+                        <option value="security">รปภ. (ผู้ตรวจการณ์)</option>
+                        <option value="safety">จป. (ผู้ดูแลระบบ)</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success" id="user-submit-btn">บันทึกผู้ใช้งาน</button>
+                    <button type="button" class="btn" id="cancel-user">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Script -->
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyALvx9s9jgX-svJbv6lPeqem5sVrVcEXgM",
+            authDomain: "keyproject-84461.firebaseapp.com",
+            databaseURL: "https://keyproject-84461-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "keyproject-84461",
+            storageBucket: "keyproject-84461.firebasestorage.app",
+            messagingSenderId: "996897859507",
+            appId: "1:996897859507:web:934b941feeaa05666b4dc6",
+            measurementId: "G-CP49GV3E06"
+        };
+
+        // Cloudinary Configuration
+        const cloudinaryConfig = {
+            cloudName: "domvtfj1i",
+            uploadPreset: "testclaimdata",
+            apiKey: "956358336591924",
+            pid: "e2a06caa-be00-455e-9808-8a7df76618e9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Cloudinary initialization will happen in DOMContentLoaded
+        let cl = null;
+
+        // App State
+        let currentUser = null;
+        let currentUserRole = null;
+        let checkpoints = [];
+        let inspectionRounds = [];
+        let emergencies = [];
+        let users = [];
+        let notifications = [];
+        
+        // Scanner Variables
+        let scannerActive = false;
+        let videoStream = null;
+        let canvas = null;
+        let canvasContext = null;
+
+        // DOM Elements
+        const loginView = document.getElementById('login-view');
+        const securityDashboard = document.getElementById('security-dashboard');
+        const safetyDashboard = document.getElementById('safety-dashboard');
+        const userInfo = document.getElementById('user-info');
+        const userRoleDisplay = document.getElementById('user-role');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loginForm = document.getElementById('login-form');
+        const roleOptions = document.querySelectorAll('.role-option');
+        const navTabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const emergencyFloatingBtn = document.getElementById('emergency-floating-btn');
+        const currentTimeDisplay = document.getElementById('current-time');
+        
+        // Scanner Elements
+        const scannerVideo = document.getElementById('scanner-video');
+        const startScannerBtn = document.getElementById('start-scanner');
+        const stopScannerBtn = document.getElementById('stop-scanner');
+        const scanResult = document.getElementById('scan-result');
+        const scanDetails = document.getElementById('scan-details');
+        const scanActions = document.getElementById('scan-actions');
+        
+        // Modal Elements
+        const emergencyModal = document.getElementById('emergency-modal');
+        const checkpointModal = document.getElementById('checkpoint-modal');
+        const roundModal = document.getElementById('round-modal');
+        const userModal = document.getElementById('user-modal');
+        
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            // เลือก role ที่ต้องการแสดง (security หรือ safety)
+            currentUserRole = 'safety'; // หรือ 'safety'
+            showDashboard(currentUserRole);
+
+            // ไม่ต้องเช็ค auth อีกต่อไป
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+        });
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Login form
+            // loginForm.addEventListener('submit', handleLogin);
+            
+            // Role selector
+            roleOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    roleOptions.forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Logout button
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // Navigation tabs
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Scanner buttons
+            startScannerBtn.addEventListener('click', startScanner);
+            stopScannerBtn.addEventListener('click', stopScanner);
+            
+            // Emergency button
+            emergencyFloatingBtn.addEventListener('click', () => {
+                emergencyModal.classList.add('active');
+            });
+            
+            // Modal close buttons
+            document.getElementById('close-emergency-modal').addEventListener('click', () => {
+                emergencyModal.classList.remove('active');
+            });
+            
+            document.getElementById('close-checkpoint-modal').addEventListener('click', () => {
+                checkpointModal.classList.remove('active');
+            });
+            
+            document.getElementById('close-round-modal').addEventListener('click', () => {
+                roundModal.classList.remove('active');
+            });
+            
+            document.getElementById('close-user-modal').addEventListener('click', () => {
+                userModal.classList.remove('active');
+            });
+            
+            document.getElementById('cancel-emergency').addEventListener('click', () => {
+                emergencyModal.classList.remove('active');
+            });
+            
+            document.getElementById('cancel-checkpoint').addEventListener('click', () => {
+                checkpointModal.classList.remove('active');
+            });
+            
+            document.getElementById('cancel-round').addEventListener('click', () => {
+                roundModal.classList.remove('active');
+            });
+            
+            document.getElementById('cancel-user').addEventListener('click', () => {
+                userModal.classList.remove('active');
+            });
+            
+            // Emergency form
+            document.getElementById('emergency-form').addEventListener('submit', handleEmergencySubmit);
+            
+            // Checkpoint form
+            document.getElementById('checkpoint-form').addEventListener('submit', handleCheckpointSubmit);
+            
+            // Round form
+            document.getElementById('round-form').addEventListener('submit', handleRoundSubmit);
+            
+            // User form
+            document.getElementById('user-form').addEventListener('submit', handleUserSubmit);
+            
+            // Image upload preview
+            document.getElementById('checkpoint-image').addEventListener('change', function(e) {
+                const preview = document.getElementById('checkpoint-image-preview');
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.classList.add('show');
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+            
+            // Create buttons in safety dashboard
+            document.getElementById('create-checkpoint-btn').addEventListener('click', () => {
+                document.getElementById('checkpoint-modal-title').textContent = 'เพิ่มจุดตรวจใหม่';
+                document.getElementById('checkpoint-form').reset();
+                document.getElementById('checkpoint-id').value = '';
+                document.getElementById('checkpoint-image-preview').classList.remove('show');
+                checkpointModal.classList.add('active');
+            });
+            
+            document.getElementById('create-round-btn').addEventListener('click', () => {
+                document.getElementById('round-modal-title').textContent = 'เพิ่มรอบตรวจใหม่';
+                document.getElementById('round-form').reset();
+                document.getElementById('round-id').value = '';
+                loadCheckpointsForSelection();
+                roundModal.classList.add('active');
+            });
+            
+            document.getElementById('create-user-btn').addEventListener('click', () => {
+                document.getElementById('user-modal-title').textContent = 'เพิ่มผู้ใช้งานใหม่';
+                document.getElementById('user-form').reset();
+                document.getElementById('user-id').value = '';
+                userModal.classList.add('active');
+            });
+            
+            // Create emergency button in security dashboard
+            document.getElementById('create-emergency-btn').addEventListener('click', () => {
+                emergencyModal.classList.add('active');
+            });
+            
+            // Save notification settings
+            document.getElementById('save-notification-settings').addEventListener('click', saveNotificationSettings);
+        }
+
+        // Handle login
+        // async function handleLogin(e) {
+        //     e.preventDefault();
+            
+        //     const email = document.getElementById('email').value;
+        //     const password = document.getElementById('password').value;
+        //     const selectedRole = document.querySelector('.role-option.active').getAttribute('data-role');
+            
+        //     // For demo purposes - create users if they don't exist
+        //     try {
+        //         const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        //         currentUser = userCredential.user;
+                
+        //         // Check if user exists in our database
+        //         const userRef = database.ref('users/' + currentUser.uid);
+        //         const snapshot = await userRef.once('value');
+                
+        //         if (!snapshot.exists()) {
+        //             // Create new user in database
+        //             await userRef.set({
+        //                 email: email,
+        //                 name: selectedRole === 'security' ? 'รปภ. ทดสอบ' : 'จป. ทดสอบ',
+        //                 role: selectedRole,
+        //                 createdAt: new Date().toISOString()
+        //             });
+        //         }
+                
+        //         // Get user role
+        //         const roleSnapshot = await userRef.once('value');
+        //         const userData = roleSnapshot.val();
+        //         currentUserRole = userData.role;
+                
+        //         // Show appropriate dashboard
+        //         showDashboard(currentUserRole);
+                
+        //         showToast('เข้าสู่ระบบสำเร็จ!', 'success');
+        //     } catch (error) {
+        //         // If user doesn't exist, try to create demo users
+        //         if (error.code === 'auth/user-not-found') {
+        //             // Create demo users
+        //             await createDemoUsers();
+                    
+        //             // Try login again
+        //             try {
+        //                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        //                 currentUser = userCredential.user;
+                        
+        //                 // Create user in database
+        //                 const userRef = database.ref('users/' + currentUser.uid);
+        //                 await userRef.set({
+        //                     email: email,
+        //                     name: selectedRole === 'security' ? 'รปภ. ทดสอบ' : 'จป. ทดสอบ',
+        //                     role: selectedRole,
+        //                     createdAt: new Date().toISOString()
+        //                 });
+                        
+        //                 currentUserRole = selectedRole;
+        //                 showDashboard(currentUserRole);
+        //                 showToast('เข้าสู่ระบบสำเร็จ! (บัญชีทดสอบถูกสร้างขึ้น)', 'success');
+        //             } catch (error2) {
+        //                 showToast('เกิดข้อผิดพลาด: ' + error2.message, 'error');
+        //             }
+        //         } else {
+        //             showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+        //         }
+        //     }
+        // }
+
+        // Create demo users for testing
+        // async function createDemoUsers() {
+        //     try {
+        //         // Create security user
+        //         await auth.createUserWithEmailAndPassword('security@test.com', '123456');
+                
+        //         // Create safety user
+        //         await auth.createUserWithEmailAndPassword('safety@test.com', '123456');
+                
+        //         // Sign out after creating demo users
+        //         await auth.signOut();
+        //     } catch (error) {
+        //         // Users might already exist, which is fine
+        //         console.log('Demo users might already exist:', error.message);
+        //     }
+        // }
+
+        // Get user role from database
+        // async function getUserRole(userId) {
+        //     const userRef = database.ref('users/' + userId);
+        //     const snapshot = await userRef.once('value');
+        //     if (snapshot.exists()) {
+        //         return snapshot.val().role;
+        //     }
+        //     return 'security'; // Default role
+        // }
+
+        // Show appropriate dashboard based on role
+        function showDashboard(role) {
+            loginView.classList.remove('active');
+            securityDashboard.classList.remove('active');
+            safetyDashboard.classList.remove('active');
+            userInfo.style.display = 'flex';
+            
+            if (role === 'security') {
+                securityDashboard.classList.add('active');
+                emergencyFloatingBtn.style.display = 'flex';
+                userRoleDisplay.textContent = 'ผู้ตรวจการณ์ (รปภ.)';
+                loadSecurityDashboardData();
+            } else {
+                safetyDashboard.classList.add('active');
+                emergencyFloatingBtn.style.display = 'none';
+                userRoleDisplay.textContent = 'ผู้ดูแลระบบ (จป.)';
+                loadSafetyDashboardData();
+            }
+        }
+
+        // Show login view
+        // function showLogin() {
+        //     loginView.classList.add('active');
+        //     securityDashboard.classList.remove('active');
+        //     safetyDashboard.classList.remove('active');
+        //     userInfo.style.display = 'none';
+        //     emergencyFloatingBtn.style.display = 'none';
+        // }
+
+        // Handle logout
+        // function handleLogout() {
+        //     auth.signOut().then(() => {
+        //         currentUser = null;
+        //         currentUserRole = null;
+        //         showLogin();
+        //         showToast('ออกจากระบบสำเร็จ', 'success');
+        //     }).catch(error => {
+        //         showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+        //     });
+        // }
+
+        // Switch between tabs
+        function switchTab(tabId) {
+            // Update active tab
+            navTabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update active tab content
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.getAttribute('data-tab') === tabId) {
+                    content.classList.add('active');
+                }
+            });
+            
+            // Load data for the tab if needed
+            if (currentUserRole === 'security') {
+                if (tabId === 'today-rounds') {
+                    loadTodayRounds();
+                } else if (tabId === 'emergency-records') {
+                    loadEmergencyRecords();
+                } else if (tabId === 'notifications') {
+                    loadNotifications();
+                }
+            } else {
+                if (tabId === 'checkpoints') {
+                    loadCheckpoints();
+                } else if (tabId === 'inspection-rounds') {
+                    loadInspectionRounds();
+                } else if (tabId === 'emergency-management') {
+                    loadEmergencyManagement();
+                } else if (tabId === 'user-management') {
+                    loadUserManagement();
+                } else if (tabId === 'system-notifications') {
+                    loadSystemNotifications();
+                }
+            }
+        }
+
+        // Update current time
+        function updateCurrentTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('th-TH', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const timeStr = now.toLocaleTimeString('th-TH');
+            
+            if (currentTimeDisplay) {
+                currentTimeDisplay.textContent = `${dateStr} ${timeStr}`;
+            }
+        }
+
+        // Load security dashboard data
+        function loadSecurityDashboardData() {
+            loadTodayRounds();
+            loadEmergencyRecords();
+            loadNotifications();
+        }
+
+        // Load safety dashboard data
+        function loadSafetyDashboardData() {
+            loadCheckpoints();
+            loadInspectionRounds();
+            loadEmergencyManagement();
+            loadUserManagement();
+            loadSystemNotifications();
+        }
+
+        // Load today's inspection rounds
+        async function loadTodayRounds() {
+            const today = new Date();
+            const dayName = today.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            
+            try {
+                const roundsRef = database.ref('inspectionRounds');
+                const snapshot = await roundsRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allRounds = snapshot.val();
+                    inspectionRounds = Object.keys(allRounds).map(key => ({
+                        id: key,
+                        ...allRounds[key]
+                    }));
+                    
+                    // Filter rounds for today
+                    const todayRounds = inspectionRounds.filter(round => {
+                        return round.days && round.days[dayName];
+                    });
+                    
+                    // Display today's rounds
+                    const roundsList = document.getElementById('today-rounds-list');
+                    if (todayRounds.length > 0) {
+                        let html = '';
+                        todayRounds.forEach(round => {
+                            const timeStr = round.time || 'ไม่ระบุเวลา';
+                            const status = getRoundStatus(round);
+                            const badgeClass = status === 'เสร็จสิ้น' ? 'badge-success' : 
+                                               status === 'กำลังดำเนินการ' ? 'badge-warning' : 'badge-danger';
+                            
+                            html += `
+                                <div class="card" style="margin-bottom: 15px;">
+                                    <h4>${round.name || 'ไม่ระบุชื่อ'}</h4>
+                                    <p><strong>เวลา:</strong> ${timeStr}</p>
+                                    <p><strong>สถานะ:</strong> <span class="badge ${badgeClass}">${status}</span></p>
+                                    <p><strong>จุดตรวจ:</strong> ${round.checkpoints ? Object.keys(round.checkpoints).length : 0} จุด</p>
+                                </div>
+                            `;
+                        });
+                        roundsList.innerHTML = html;
+                    } else {
+                        roundsList.innerHTML = '<p>ไม่มีรอบตรวจสำหรับวันนี้</p>';
+                    }
+                } else {
+                    document.getElementById('today-rounds-list').innerHTML = '<p>ไม่มีข้อมูลรอบตรวจ</p>';
+                }
+            } catch (error) {
+                document.getElementById('today-rounds-list').innerHTML = '<p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+                console.error('Error loading today rounds:', error);
+            }
+        }
+
+        // Get round status
+        function getRoundStatus(round) {
+            // For demo purposes, return a random status
+            const statuses = ['เสร็จสิ้น', 'กำลังดำเนินการ', 'ยังไม่เริ่ม'];
+            return statuses[Math.floor(Math.random() * statuses.length)];
+        }
+
+        // Load emergency records
+        async function loadEmergencyRecords() {
+            try {
+                const emergenciesRef = database.ref('emergencies');
+                const snapshot = await emergenciesRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allEmergencies = snapshot.val();
+                    emergencies = Object.keys(allEmergencies).map(key => ({
+                        id: key,
+                        ...allEmergencies[key]
+                    }));
+                    
+                    // Filter emergencies for current user
+                    const userEmergencies = emergencies.filter(emergency => 
+                        emergency.reportedBy === currentUser.uid
+                    );
+                    
+                    // Display emergencies
+                    const tableBody = document.getElementById('emergency-table-body');
+                    if (userEmergencies.length > 0) {
+                        let html = '';
+                        userEmergencies.forEach(emergency => {
+                            const date = emergency.createdAt ? new Date(emergency.createdAt).toLocaleDateString('th-TH') : 'ไม่ระบุ';
+                            const typeMap = {
+                                'fire': 'ไฟไหม้',
+                                'accident': 'อุบัติเหตุ',
+                                'equipment': 'อุปกรณ์ชำรุด',
+                                'security': 'ความปลอดภัย',
+                                'other': 'อื่นๆ'
+                            };
+                            const type = typeMap[emergency.type] || 'ไม่ระบุ';
+                            const severityMap = {
+                                'low': 'ต่ำ',
+                                'medium': 'กลาง',
+                                'high': 'สูง',
+                                'critical': 'วิกฤต'
+                            };
+                            const severity = severityMap[emergency.severity] || 'ไม่ระบุ';
+                            
+                            html += `
+                                <tr>
+                                    <td>${date}</td>
+                                    <td>${type}</td>
+                                    <td>${emergency.description || 'ไม่มีรายละเอียด'}</td>
+                                    <td><span class="badge ${getSeverityBadgeClass(emergency.severity)}">${severity}</span></td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="4">ไม่มีบันทึกเหตุฉุกเฉิน</td></tr>';
+                    }
+                } else {
+                    document.getElementById('emergency-table-body').innerHTML = '<tr><td colspan="4">ไม่มีบันทึกเหตุฉุกเฉิน</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('emergency-table-body').innerHTML = '<tr><td colspan="4">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                console.error('Error loading emergencies:', error);
+            }
+        }
+
+        // Get severity badge class
+        function getSeverityBadgeClass(severity) {
+            switch(severity) {
+                case 'low': return 'badge-success';
+                case 'medium': return 'badge-warning';
+                case 'high': return 'badge-warning';
+                case 'critical': return 'badge-danger';
+                default: return 'badge-warning';
+            }
+        }
+
+        // Load notifications
+        async function loadNotifications() {
+            try {
+                const notificationsRef = database.ref('notifications');
+                const snapshot = await notificationsRef.orderByChild('createdAt').limitToLast(10).once('value');
+                
+                if (snapshot.exists()) {
+                    const allNotifications = snapshot.val();
+                    notifications = Object.keys(allNotifications).map(key => ({
+                        id: key,
+                        ...allNotifications[key]
+                    })).reverse(); // Newest first
+                    
+                    // Display notifications
+                    const notificationList = document.getElementById('notification-list');
+                    if (notifications.length > 0) {
+                        let html = '';
+                        notifications.forEach(notification => {
+                            const time = notification.createdAt ? new Date(notification.createdAt).toLocaleTimeString('th-TH') : 'ไม่ระบุเวลา';
+                            const date = notification.createdAt ? new Date(notification.createdAt).toLocaleDateString('th-TH') : 'ไม่ระบุวันที่';
+                            
+                            html += `
+                                <div class="notification-item ${notification.read ? '' : 'unread'}">
+                                    <p><strong>${notification.title || 'การแจ้งเตือน'}</strong></p>
+                                    <p>${notification.message || 'ไม่มีข้อความ'}</p>
+                                    <div class="notification-time">${date} ${time}</div>
+                                </div>
+                            `;
+                        });
+                        notificationList.innerHTML = html;
+                    } else {
+                        notificationList.innerHTML = '<p>ไม่มีการแจ้งเตือน</p>';
+                    }
+                } else {
+                    document.getElementById('notification-list').innerHTML = '<p>ไม่มีการแจ้งเตือน</p>';
+                }
+            } catch (error) {
+                document.getElementById('notification-list').innerHTML = '<p>เกิดข้อผิดพลาดในการโหลดการแจ้งเตือน</p>';
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        // Load checkpoints
+        async function loadCheckpoints() {
+            try {
+                const checkpointsRef = database.ref('checkpoints');
+                const snapshot = await checkpointsRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allCheckpoints = snapshot.val();
+                    checkpoints = Object.keys(allCheckpoints).map(key => ({
+                        id: key,
+                        ...allCheckpoints[key]
+                    }));
+                    
+                    // Display checkpoints
+                    const tableBody = document.getElementById('checkpoints-table-body');
+                    if (checkpoints.length > 0) {
+                        let html = '';
+                        checkpoints.forEach(checkpoint => {
+                            const hasImage = checkpoint.imageUrl ? 'มี' : 'ไม่มี';
+                            const qrCode = checkpoint.qrCode ? 'มี' : 'ไม่มี';
+                            
+                            html += `
+                                <tr>
+                                    <td>${checkpoint.name || 'ไม่ระบุชื่อ'}</td>
+                                    <td>${checkpoint.location || 'ไม่ระบุตำแหน่ง'}</td>
+                                    <td>${qrCode}</td>
+                                    <td>${hasImage}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="editCheckpoint('${checkpoint.id}')">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteCheckpoint('${checkpoint.id}')">
+                                            <i class="fas fa-trash"></i> ลบ
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="5">ไม่มีจุดตรวจ</td></tr>';
+                    }
+                } else {
+                    document.getElementById('checkpoints-table-body').innerHTML = '<tr><td colspan="5">ไม่มีจุดตรวจ</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('checkpoints-table-body').innerHTML = '<tr><td colspan="5">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                console.error('Error loading checkpoints:', error);
+            }
+        }
+
+        // Load inspection rounds
+        async function loadInspectionRounds() {
+            try {
+                const roundsRef = database.ref('inspectionRounds');
+                const snapshot = await roundsRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allRounds = snapshot.val();
+                    inspectionRounds = Object.keys(allRounds).map(key => ({
+                        id: key,
+                        ...allRounds[key]
+                    }));
+                    
+                    // Display rounds
+                    const tableBody = document.getElementById('rounds-table-body');
+                    if (inspectionRounds.length > 0) {
+                        let html = '';
+                        inspectionRounds.forEach(round => {
+                            const checkpointCount = round.checkpoints ? Object.keys(round.checkpoints).length : 0;
+                            const days = round.days ? Object.keys(round.days).filter(day => round.days[day]).length : 0;
+                            
+                            html += `
+                                <tr>
+                                    <td>${round.name || 'ไม่ระบุชื่อ'}</td>
+                                    <td>${round.time || 'ไม่ระบุเวลา'}</td>
+                                    <td>${checkpointCount} จุด</td>
+                                    <td>${round.notificationBefore || 15} นาที</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="editRound('${round.id}')">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteRound('${round.id}')">
+                                            <i class="fas fa-trash"></i> ลบ
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="5">ไม่มีรอบตรวจ</td></tr>';
+                    }
+                } else {
+                    document.getElementById('rounds-table-body').innerHTML = '<tr><td colspan="5">ไม่มีรอบตรวจ</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('rounds-table-body').innerHTML = '<tr><td colspan="5">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                console.error('Error loading rounds:', error);
+            }
+        }
+
+        // Load emergency management
+        async function loadEmergencyManagement() {
+            try {
+                const emergenciesRef = database.ref('emergencies');
+                const snapshot = await emergenciesRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allEmergencies = snapshot.val();
+                    emergencies = Object.keys(allEmergencies).map(key => ({
+                        id: key,
+                        ...allEmergencies[key]
+                    }));
+                    
+                    // Display emergencies
+                    const tableBody = document.getElementById('emergency-management-table-body');
+                    if (emergencies.length > 0) {
+                        let html = '';
+                        emergencies.forEach(emergency => {
+                            const date = emergency.createdAt ? new Date(emergency.createdAt).toLocaleDateString('th-TH') : 'ไม่ระบุ';
+                            const typeMap = {
+                                'fire': 'ไฟไหม้',
+                                'accident': 'อุบัติเหตุ',
+                                'equipment': 'อุปกรณ์ชำรุด',
+                                'security': 'ความปลอดภัย',
+                                'other': 'อื่นๆ'
+                            };
+                            const type = typeMap[emergency.type] || 'ไม่ระบุ';
+                            const severityMap = {
+                                'low': 'ต่ำ',
+                                'medium': 'กลาง',
+                                'high': 'สูง',
+                                'critical': 'วิกฤต'
+                            };
+                            const severity = severityMap[emergency.severity] || 'ไม่ระบุ';
+                            const statusMap = {
+                                'reported': 'รายงานแล้ว',
+                                'investigating': 'กำลังสอบสวน',
+                                'resolved': 'แก้ไขแล้ว'
+                            };
+                            const status = statusMap[emergency.status] || 'รายงานแล้ว';
+                            
+                            html += `
+                                <tr>
+                                    <td>${date}</td>
+                                    <td>${emergency.reportedByName || 'ไม่ระบุ'}</td>
+                                    <td>${type}</td>
+                                    <td>${emergency.description ? emergency.description.substring(0, 50) + '...' : 'ไม่มีรายละเอียด'}</td>
+                                    <td><span class="badge ${getSeverityBadgeClass(emergency.severity)}">${severity}</span></td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="updateEmergencyStatus('${emergency.id}', 'investigating')">
+                                            <i class="fas fa-search"></i> กำลังสอบสวน
+                                        </button>
+                                        <button class="btn btn-success btn-sm" onclick="updateEmergencyStatus('${emergency.id}', 'resolved')">
+                                            <i class="fas fa-check"></i> แก้ไขแล้ว
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="6">ไม่มีบันทึกเหตุฉุกเฉิน</td></tr>';
+                    }
+                } else {
+                    document.getElementById('emergency-management-table-body').innerHTML = '<tr><td colspan="6">ไม่มีบันทึกเหตุฉุกเฉิน</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('emergency-management-table-body').innerHTML = '<tr><td colspan="6">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                console.error('Error loading emergencies:', error);
+            }
+        }
+
+        // Load user management
+        async function loadUserManagement() {
+            try {
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allUsers = snapshot.val();
+                    users = Object.keys(allUsers).map(key => ({
+                        id: key,
+                        ...allUsers[key]
+                    }));
+                    
+                    // Display users
+                    const tableBody = document.getElementById('users-table-body');
+                    if (users.length > 0) {
+                        let html = '';
+                        users.forEach(user => {
+                            const roleMap = {
+                                'security': 'รปภ. (ผู้ตรวจการณ์)',
+                                'safety': 'จป. (ผู้ดูแลระบบ)'
+                            };
+                            const role = roleMap[user.role] || 'ไม่ระบุ';
+                            
+                            html += `
+                                <tr>
+                                    <td>${user.name || 'ไม่ระบุชื่อ'}</td>
+                                    <td>${user.email || 'ไม่ระบุอีเมล'}</td>
+                                    <td>${role}</td>
+                                    <td><span class="badge badge-success">ใช้งานอยู่</span></td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="editUser('${user.id}')">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')">
+                                            <i class="fas fa-trash"></i> ลบ
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="5">ไม่มีผู้ใช้งาน</td></tr>';
+                    }
+                } else {
+                    document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5">ไม่มีผู้ใช้งาน</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Load system notifications
+        async function loadSystemNotifications() {
+            try {
+                const notificationsRef = database.ref('systemNotifications');
+                const snapshot = await notificationsRef.orderByChild('createdAt').limitToLast(10).once('value');
+                
+                if (snapshot.exists()) {
+                    const allNotifications = snapshot.val();
+                    const notifications = Object.keys(allNotifications).map(key => ({
+                        id: key,
+                        ...allNotifications[key]
+                    })).reverse(); // Newest first
+                    
+                    // Display notifications
+                    const notificationsContainer = document.getElementById('system-notifications');
+                    if (notifications.length > 0) {
+                        let html = '';
+                        notifications.forEach(notification => {
+                            const time = notification.createdAt ? new Date(notification.createdAt).toLocaleTimeString('th-TH') : 'ไม่ระบุเวลา';
+                            const date = notification.createdAt ? new Date(notification.createdAt).toLocaleDateString('th-TH') : 'ไม่ระบุวันที่';
+                            
+                            html += `
+                                <div class="notification-item">
+                                    <p><strong>${notification.title || 'การแจ้งเตือนระบบ'}</strong></p>
+                                    <p>${notification.message || 'ไม่มีข้อความ'}</p>
+                                    <div class="notification-time">${date} ${time}</div>
+                                </div>
+                            `;
+                        });
+                        notificationsContainer.innerHTML = html;
+                    } else {
+                        notificationsContainer.innerHTML = '<p>ไม่มีการแจ้งเตือนระบบ</p>';
+                    }
+                } else {
+                    document.getElementById('system-notifications').innerHTML = '<p>ไม่มีการแจ้งเตือนระบบ</p>';
+                }
+            } catch (error) {
+                document.getElementById('system-notifications').innerHTML = '<p>เกิดข้อผิดพลาดในการโหลดการแจ้งเตือนระบบ</p>';
+                console.error('Error loading system notifications:', error);
+            }
+        }
+
+        // Load checkpoints for selection in round form
+        async function loadCheckpointsForSelection() {
+            try {
+                const checkpointsRef = database.ref('checkpoints');
+                const snapshot = await checkpointsRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const allCheckpoints = snapshot.val();
+                    checkpoints = Object.keys(allCheckpoints).map(key => ({
+                        id: key,
+                        ...allCheckpoints[key]
+                    }));
+                    
+                    // Display checkpoints for selection
+                    const selectionContainer = document.getElementById('checkpoint-selection');
+                    if (checkpoints.length > 0) {
+                        let html = '';
+                        checkpoints.forEach(checkpoint => {
+                            html += `
+                                <div style="margin-bottom: 10px;">
+                                    <label>
+                                        <input type="checkbox" name="checkpoint" value="${checkpoint.id}">
+                                        ${checkpoint.name} (${checkpoint.location})
+                                    </label>
+                                </div>
+                            `;
+                        });
+                        selectionContainer.innerHTML = html;
+                    } else {
+                        selectionContainer.innerHTML = '<p>ยังไม่มีจุดตรวจ</p>';
+                    }
+                } else {
+                    document.getElementById('checkpoint-selection').innerHTML = '<p>ยังไม่มีจุดตรวจ</p>';
+                }
+            } catch (error) {
+                document.getElementById('checkpoint-selection').innerHTML = '<p>เกิดข้อผิดพลาดในการโหลดจุดตรวจ</p>';
+                console.error('Error loading checkpoints for selection:', error);
+            }
+        }
+
+        // Handle emergency submission
+        async function handleEmergencySubmit(e) {
+            e.preventDefault();
+            
+            const type = document.getElementById('emergency-type').value;
+            const description = document.getElementById('emergency-description').value;
+            const severity = document.getElementById('emergency-severity').value;
+            
+            if (!type || !description) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            try {
+                const emergencyRef = database.ref('emergencies').push();
+                const emergencyData = {
+                    type: type,
+                    description: description,
+                    severity: severity,
+                    status: 'reported',
+                    reportedBy: currentUser.uid,
+                    reportedByName: currentUser.email,
+                    createdAt: new Date().toISOString()
+                };
+                
+                await emergencyRef.set(emergencyData);
+                
+                // Add notification
+                const notificationRef = database.ref('notifications').push();
+                await notificationRef.set({
+                    title: 'รายงานเหตุฉุกเฉินใหม่',
+                    message: `มีรายงานเหตุฉุกเฉินประเภท: ${type}`,
+                    type: 'emergency',
+                    read: false,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // Add system notification
+                const systemNotificationRef = database.ref('systemNotifications').push();
+                await systemNotificationRef.set({
+                    title: 'รายงานเหตุฉุกเฉิน',
+                    message: `ผู้ใช้ ${currentUser.email} รายงานเหตุฉุกเฉิน: ${description.substring(0, 50)}...`,
+                    type: 'emergency',
+                    createdAt: new Date().toISOString()
+                });
+                
+                showToast('รายงานเหตุฉุกเฉินสำเร็จ', 'success');
+                emergencyModal.classList.remove('active');
+                document.getElementById('emergency-form').reset();
+                
+                // Reload emergency data
+                if (currentUserRole === 'security') {
+                    loadEmergencyRecords();
+                } else {
+                    loadEmergencyManagement();
+                }
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Handle checkpoint submission
+        async function handleCheckpointSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('checkpoint-id').value;
+            const name = document.getElementById('checkpoint-name').value;
+            const location = document.getElementById('checkpoint-location').value;
+            const instructions = document.getElementById('checkpoint-instructions').value;
+            const imageFile = document.getElementById('checkpoint-image').files[0];
+            
+            if (!name || !location) {
+                showToast('กรุณากรอกชื่อและตำแหน่งจุดตรวจ', 'error');
+                return;
+            }
+            
+            try {
+                let imageUrl = '';
+                
+                // Upload image to Cloudinary if exists
+                if (imageFile) {
+                    imageUrl = await uploadImageToCloudinary(imageFile);
+                }
+                
+                const checkpointData = {
+                    name: name,
+                    location: location,
+                    instructions: instructions,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (imageUrl) {
+                    checkpointData.imageUrl = imageUrl;
+                }
+                
+                // Generate QR code data
+                const qrData = {
+                    type: 'checkpoint',
+                    id: id || Date.now().toString(),
+                    name: name,
+                    location: location
+                };
+                checkpointData.qrCode = JSON.stringify(qrData);
+                
+                if (id) {
+                    // Update existing checkpoint
+                    const checkpointRef = database.ref('checkpoints/' + id);
+                    await checkpointRef.update(checkpointData);
+                    showToast('อัพเดทจุดตรวจสำเร็จ', 'success');
+                } else {
+                    // Create new checkpoint
+                    checkpointData.createdAt = new Date().toISOString();
+                    checkpointData.createdBy = currentUser.uid;
+                    const checkpointRef = database.ref('checkpoints').push();
+                    await checkpointRef.set(checkpointData);
+                    showToast('สร้างจุดตรวจใหม่สำเร็จ', 'success');
+                }
+                
+                checkpointModal.classList.remove('active');
+                document.getElementById('checkpoint-form').reset();
+                document.getElementById('checkpoint-image-preview').classList.remove('show');
+                
+                // Reload checkpoints
+                loadCheckpoints();
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Handle round submission
+        async function handleRoundSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('round-id').value;
+            const name = document.getElementById('round-name').value;
+            const time = document.getElementById('round-time').value;
+            const notificationBefore = document.getElementById('notification-before').value;
+            
+            // Get selected checkpoints
+            const selectedCheckpoints = [];
+            document.querySelectorAll('input[name="checkpoint"]:checked').forEach(cb => {
+                selectedCheckpoints.push(cb.value);
+            });
+            
+            // Get selected days
+            const days = {};
+            document.querySelectorAll('input[name="day"]:checked').forEach(cb => {
+                days[cb.value] = true;
+            });
+            
+            if (!name || !time || selectedCheckpoints.length === 0 || Object.keys(days).length === 0) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            try {
+                // Convert checkpoints array to object
+                const checkpointsObj = {};
+                selectedCheckpoints.forEach(cpId => {
+                    checkpointsObj[cpId] = true;
+                });
+                
+                const roundData = {
+                    name: name,
+                    time: time,
+                    notificationBefore: parseInt(notificationBefore) || 15,
+                    checkpoints: checkpointsObj,
+                    days: days,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (id) {
+                    // Update existing round
+                    const roundRef = database.ref('inspectionRounds/' + id);
+                    await roundRef.update(roundData);
+                    showToast('อัพเดทรอบตรวจสำเร็จ', 'success');
+                } else {
+                    // Create new round
+                    roundData.createdAt = new Date().toISOString();
+                    roundData.createdBy = currentUser.uid;
+                    const roundRef = database.ref('inspectionRounds').push();
+                    await roundRef.set(roundData);
+                    showToast('สร้างรอบตรวจใหม่สำเร็จ', 'success');
+                }
+                
+                roundModal.classList.remove('active');
+                document.getElementById('round-form').reset();
+                
+                // Reload rounds
+                loadInspectionRounds();
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Handle user submission
+        async function handleUserSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('user-id').value;
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const role = document.getElementById('user-role-select').value;
+            
+            if (!name || !email || !role) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            try {
+                const userData = {
+                    name: name,
+                    email: email,
+                    role: role,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (id) {
+                    // Update existing user
+                    const userRef = database.ref('users/' + id);
+                    await userRef.update(userData);
+                    
+                    // Update password if provided
+                    if (password) {
+                        // Note: In a real app, you would update the Firebase Auth user password here
+                        // This requires re-authentication which is more complex
+                        showToast('อัพเดทข้อมูลผู้ใช้งานสำเร็จ (รหัสผ่านต้องเปลี่ยนผ่านระบบ Authentication)', 'success');
+                    } else {
+                        showToast('อัพเดทข้อมูลผู้ใช้งานสำเร็จ', 'success');
+                    }
+                } else {
+                    // Create new user in Firebase Auth
+                    if (!password) {
+                        showToast('กรุณากรอกรหัสผ่านสำหรับผู้ใช้งานใหม่', 'error');
+                        return;
+                    }
+                    
+                    // In a real app, you would create the user in Firebase Auth here
+                    // For demo purposes, we'll just save to database
+                    userData.createdAt = new Date().toISOString();
+                    const userRef = database.ref('users').push();
+                    await userRef.set(userData);
+                    showToast('สร้างผู้ใช้งานใหม่สำเร็จ', 'success');
+                }
+                
+                userModal.classList.remove('active');
+                document.getElementById('user-form').reset();
+                
+                // Reload users
+                loadUserManagement();
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Upload image to Cloudinary
+        async function uploadImageToCloudinary(file) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+                formData.append('folder', 'CHECK');
+                formData.append('api_key', cloudinaryConfig.apiKey);
+                
+                // Note: This is a simplified version. In production, you should use
+                // Cloudinary's signed uploads or do this server-side
+                const url = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/upload`;
+                
+                fetch(url, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.secure_url) {
+                        resolve(data.secure_url);
+                    } else {
+                        reject(new Error('Upload failed'));
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+            });
+        }
+
+        // Save notification settings
+        async function saveNotificationSettings() {
+            const notificationTime = document.getElementById('notification-time').value;
+            
+            try {
+                const settingsRef = database.ref('systemSettings/notificationTime');
+                await settingsRef.set(parseInt(notificationTime) || 15);
+                
+                showToast('บันทึกการตั้งค่าแจ้งเตือนสำเร็จ', 'success');
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Start QR scanner
+        function startScanner() {
+            scannerActive = true;
+            startScannerBtn.style.display = 'none';
+            stopScannerBtn.style.display = 'inline-block';
+            scanResult.style.display = 'none';
+            
+            // Initialize canvas for QR scanning
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvasContext = canvas.getContext('2d');
+            }
+            
+            // Get video stream from camera
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
+            })
+            .then(stream => {
+                videoStream = stream;
+                scannerVideo.srcObject = stream;
+                scannerVideo.play();
+                requestAnimationFrame(scanQRCode);
+            })
+            .catch(error => {
+                showToast('ไม่สามารถเข้าถึงกล้องได้: ' + error.message, 'error');
+                stopScanner();
+            });
+        }
+
+        // Stop QR scanner
+        function stopScanner() {
+            scannerActive = false;
+            startScannerBtn.style.display = 'inline-block';
+            stopScannerBtn.style.display = 'none';
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            scannerVideo.srcObject = null;
+        }
+
+        // Scan for QR codes
+        function scanQRCode() {
+            if (!scannerActive) return;
+            
+            if (scannerVideo.readyState === scannerVideo.HAVE_ENOUGH_DATA) {
+                canvas.width = scannerVideo.videoWidth;
+                canvas.height = scannerVideo.videoHeight;
+                canvasContext.drawImage(scannerVideo, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    stopScanner();
+                    processQRCode(code.data);
+                }
+            }
+            
+            requestAnimationFrame(scanQRCode);
+        }
+
+        // Process scanned QR code
+        function processQRCode(data) {
+            try {
+                const qrData = JSON.parse(data);
+                
+                if (qrData.type === 'checkpoint') {
+                    // Find checkpoint by ID
+                    const checkpoint = checkpoints.find(cp => cp.id === qrData.id);
+                    
+                    if (checkpoint) {
+                        scanDetails.innerHTML = `
+                            <h4>${checkpoint.name}</h4>
+                            <p><strong>ตำแหน่ง:</strong> ${checkpoint.location}</p>
+                            <p><strong>คำแนะนำ:</strong> ${checkpoint.instructions || 'ไม่มีคำแนะนำ'}</p>
+                            ${checkpoint.imageUrl ? `<img src="${checkpoint.imageUrl}" alt="Checkpoint" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 5px; margin-top: 10px;">` : ''}
+                        `;
+                        
+                        scanActions.innerHTML = `
+                            <button class="btn btn-success" id="confirm-scan">
+                                <i class="fas fa-check"></i> ยืนยันการตรวจสอบ
+                            </button>
+                            <button class="btn" id="rescan">
+                                <i class="fas fa-redo"></i> แสกนใหม่
+                            </button>
+                        `;
+                        
+                        // Add event listeners to new buttons
+                        document.getElementById('confirm-scan').addEventListener('click', () => {
+                            recordCheckpointScan(checkpoint);
+                        });
+                        
+                        document.getElementById('rescan').addEventListener('click', () => {
+                            scanResult.style.display = 'none';
+                            startScanner();
+                        });
+                        
+                        scanResult.style.display = 'block';
+                    } else {
+                        scanDetails.innerHTML = '<p>ไม่พบข้อมูลจุดตรวจนี้ในระบบ</p>';
+                        scanResult.style.display = 'block';
+                    }
+                } else {
+                    scanDetails.innerHTML = '<p>คิวอาร์โค้ดไม่ถูกต้อง</p>';
+                    scanResult.style.display = 'block';
+                }
+            } catch (error) {
+                scanDetails.innerHTML = '<p>ไม่สามารถอ่านคิวอาร์โค้ดได้</p>';
+                scanResult.style.display = 'block';
+            }
+        }
+
+        // Record checkpoint scan
+        async function recordCheckpointScan(checkpoint) {
+            try {
+                const scanRef = database.ref('scans').push();
+                await scanRef.set({
+                    checkpointId: checkpoint.id,
+                    checkpointName: checkpoint.name,
+                    scannedBy: currentUser.uid,
+                    scannedByName: currentUser.email,
+                    scannedAt: new Date().toISOString()
+                });
+                
+                // Add notification
+                const notificationRef = database.ref('notifications').push();
+                await notificationRef.set({
+                    title: 'ตรวจสอบจุดตรวจสำเร็จ',
+                    message: `จุดตรวจ "${checkpoint.name}" ถูกตรวจสอบแล้ว`,
+                    type: 'scan',
+                    read: false,
+                    createdAt: new Date().toISOString()
+                });
+                
+                showToast('บันทึกการตรวจสอบจุดตรวจสำเร็จ', 'success');
+                scanResult.style.display = 'none';
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const backgroundColor = type === 'success' ? '#27ae60' : 
+                                  type === 'error' ? '#e74c3c' : 
+                                  type === 'warning' ? '#f39c12' : '#3498db';
+            
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: backgroundColor,
+                stopOnFocus: true
+            }).showToast();
+        }
+
+        // Functions for edit/delete operations
+        async function editCheckpoint(id) {
+            const checkpoint = checkpoints.find(cp => cp.id === id);
+            if (!checkpoint) return;
+            
+            document.getElementById('checkpoint-modal-title').textContent = 'แก้ไขจุดตรวจ';
+            document.getElementById('checkpoint-id').value = checkpoint.id;
+            document.getElementById('checkpoint-name').value = checkpoint.name || '';
+            document.getElementById('checkpoint-location').value = checkpoint.location || '';
+            document.getElementById('checkpoint-instructions').value = checkpoint.instructions || '';
+            
+            if (checkpoint.imageUrl) {
+                document.getElementById('checkpoint-image-preview').src = checkpoint.imageUrl;
+                document.getElementById('checkpoint-image-preview').classList.add('show');
+            } else {
+                document.getElementById('checkpoint-image-preview').classList.remove('show');
+            }
+            
+            checkpointModal.classList.add('active');
+        }
+
+        async function deleteCheckpoint(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบจุดตรวจนี้?')) {
+                try {
+                    await database.ref('checkpoints/' + id).remove();
+                    showToast('ลบจุดตรวจสำเร็จ', 'success');
+                    loadCheckpoints();
+                } catch (error) {
+                    showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function editRound(id) {
+            const round = inspectionRounds.find(r => r.id === id);
+            if (!round) return;
+            
+            document.getElementById('round-modal-title').textContent = 'แก้ไขรอบตรวจ';
+            document.getElementById('round-id').value = round.id;
+            document.getElementById('round-name').value = round.name || '';
+            document.getElementById('round-time').value = round.time || '';
+            document.getElementById('notification-before').value = round.notificationBefore || 15;
+            
+            // Load checkpoints for selection
+            await loadCheckpointsForSelection();
+            
+            // Check the checkpoints in this round
+            setTimeout(() => {
+                if (round.checkpoints) {
+                    Object.keys(round.checkpoints).forEach(cpId => {
+                        const checkbox = document.querySelector(`input[name="checkpoint"][value="${cpId}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+                
+                // Check the days
+                if (round.days) {
+                    Object.keys(round.days).forEach(day => {
+                        const checkbox = document.querySelector(`input[name="day"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            }, 100);
+            
+            roundModal.classList.add('active');
+        }
+
+        async function deleteRound(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบรอบตรวจนี้?')) {
+                try {
+                    await database.ref('inspectionRounds/' + id).remove();
+                    showToast('ลบรอบตรวจสำเร็จ', 'success');
+                    loadInspectionRounds();
+                } catch (error) {
+                    showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function updateEmergencyStatus(id, status) {
+            try {
+                await database.ref('emergencies/' + id).update({
+                    status: status,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                showToast('อัพเดทสถานะเหตุฉุกเฉินสำเร็จ', 'success');
+                loadEmergencyManagement();
+            } catch (error) {
+                showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+        }
+
+        async function editUser(id) {
+            const user = users.find(u => u.id === id);
+            if (!user) return;
+            
+            document.getElementById('user-modal-title').textContent = 'แก้ไขผู้ใช้งาน';
+            document.getElementById('user-id').value = user.id;
+            document.getElementById('user-name').value = user.name || '';
+            document.getElementById('user-email').value = user.email || '';
+            document.getElementById('user-role-select').value = user.role || '';
+            document.getElementById('user-password').value = '';
+            
+            userModal.classList.add('active');
+        }
+
+        async function deleteUser(id) {
+            if (confirm('คุณแน่ใจว่าต้องการลบผู้ใช้งานนี้?')) {
+                try {
+                    await database.ref('users/' + id).remove();
+                    showToast('ลบผู้ใช้งานสำเร็จ', 'success');
+                    loadUserManagement();
+                } catch (error) {
+                    showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Location Tracker</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfXfH_Tklv-kAsENkTroB4tHKC5zkrIUU"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #666;
+            font-size: 1.1em;
+            word-break: break-all;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+        }
+
+        .history-item-time {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .history-item-coords {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .accuracy-bar {
+            background: #e9ecef;
+            border-radius: 5px;
+            height: 20px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .accuracy-fill {
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .distance-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Map Section -->
+        <div class="card">
+            <div class="card-header">📍 Google Maps</div>
+            <div class="card-body">
+                <div id="map"></div>
+                <div id="mapStatus" class="status info" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Location Info Section -->
+        <div class="card">
+            <div class="card-header">📊 ข้อมูลตำแหน่ง</div>
+            <div class="card-body">
+                <div id="statusMessage" class="status info">กดปุ่มเพื่อเริ่มบันทึกตำแหน่ง GPS</div>
+
+                <div class="info-section">
+                    <div class="info-label">Latitude</div>
+                    <div class="info-value" id="latitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">Longitude</div>
+                    <div class="info-value" id="longitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความแม่นยำ (เมตร)</div>
+                    <div class="info-value" id="accuracy">-</div>
+                    <div class="accuracy-bar">
+                        <div class="accuracy-fill" id="accuracyFill" style="width: 0%">-</div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความสูง (เมตร)</div>
+                    <div class="info-value" id="altitude">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความเร็ว (m/s)</div>
+                    <div class="info-value" id="speed">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">เวลา</div>
+                    <div class="info-value" id="timestamp">-</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="startTracking()">🟢 เริ่มติดตาม</button>
+                    <button class="btn-danger" onclick="stopTracking()">🔴 หยุด</button>
+                    <button class="btn-secondary" onclick="clearHistory()">🗑️ ล้างประวัติ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="card">
+            <div class="card-header">📜 ประวัติตำแหน่ง</div>
+            <div class="card-body">
+                <h3 id="historyCount">บันทึก: 0</h3>
+                <div class="history-list" id="historyList">
+                    <div class="no-history">ยังไม่มีประวัติตำแหน่ง</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="card">
+            <div class="card-header">📈 สถิติ</div>
+            <div class="card-body">
+                <div class="info-section">
+                    <div class="info-label">จำนวนบันทึกทั้งหมด</div>
+                    <div class="info-value" id="totalRecords">0</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ความแม่นยำเฉลี่ย</div>
+                    <div class="info-value" id="avgAccuracy">-</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">ระยะทางที่เดินทาง</div>
+                    <div class="info-value" id="totalDistance">0 เมตร</div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">สถานะการติดตาม</div>
+                    <div class="info-value" id="trackingStatus">ไม่ทำงาน</div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="exportData()">📥 ส่งออกข้อมูล</button>
+                    <button class="btn-secondary" onclick="downloadGPX()">📍 ดาวน์โหลด GPX</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            updateInterval: 5000, // milliseconds
+            maxHistoryRecords: 100,
+            accuracyThreshold: 50 // meters
+        };
+
+        // Global variables
+        let map;
+        let marker;
+        let polyline;
+        let watchId = null;
+        let locations = [];
+        let isTracking = false;
+        let totalDistance = 0;
+
+        // Initialize map
+        function initMap() {
+            const defaultLocation = { lat: 13.7563, lng: 100.5018 }; // Bangkok, Thailand
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 15,
+                center: defaultLocation,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true
+            });
+
+            polyline = new google.maps.Polyline({
+                map: map,
+                strokeColor: '#667eea',
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+                geodesic: true
+            });
+
+            showMapStatus('แผนที่พร้อมใช้งาน', 'success');
+        }
+
+        // Start tracking
+        window.startTracking = function() {
+            if (isTracking) {
+                showStatus('การติดตามกำลังทำงานอยู่แล้ว', 'warning');
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                showStatus('อุปกรณ์นี้ไม่รองรับ GPS', 'error');
+                return;
+            }
+
+            showStatus('กำลังค้นหาตำแหน่ง...', 'info');
+            document.getElementById('trackingStatus').textContent = 'ทำงาน';
+
+            isTracking = true;
+
+            // Watch position with high accuracy
+            watchId = navigator.geolocation.watchPosition(
+                handlePosition,
+                handleError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        };
+
+        // Stop tracking
+        window.stopTracking = function() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                isTracking = false;
+                document.getElementById('trackingStatus').textContent = 'ไม่ทำงาน';
+                showStatus('หยุดติดตามแล้ว', 'info');
+            }
+        };
+
+        // Handle position
+        function handlePosition(position) {
+            const coords = position.coords;
+            
+            const location = {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                accuracy: Math.round(coords.accuracy),
+                altitude: coords.altitude ? Math.round(coords.altitude) : null,
+                speed: coords.speed ? Math.round(coords.speed * 3.6) : 0, // Convert to km/h
+                timestamp: new Date()
+            };
+
+            // Update UI
+            document.getElementById('latitude').textContent = coords.latitude.toFixed(6);
+            document.getElementById('longitude').textContent = coords.longitude.toFixed(6);
+            document.getElementById('accuracy').textContent = location.accuracy + ' m';
+            document.getElementById('altitude').textContent = location.altitude ? location.altitude + ' m' : '-';
+            document.getElementById('speed').textContent = location.speed + ' km/h';
+            document.getElementById('timestamp').textContent = location.timestamp.toLocaleString('th-TH');
+
+            // Update accuracy bar
+            const accuracyPercent = Math.max(0, 100 - (location.accuracy / 2));
+            document.getElementById('accuracyFill').style.width = accuracyPercent + '%';
+            document.getElementById('accuracyFill').textContent = location.accuracy + 'm';
+
+            // Add to history
+            addToHistory(location);
+
+            // Update map
+            updateMap(coords.latitude, coords.longitude, location.accuracy);
+
+            // Calculate distance
+            if (locations.length > 0) {
+                const lastLoc = locations[locations.length - 1];
+                const distance = calculateDistance(
+                    lastLoc.latitude, lastLoc.longitude,
+                    coords.latitude, coords.longitude
+                );
+                totalDistance += distance;
+            }
+
+            locations.push(location);
+
+            // Keep only max records
+            if (locations.length > CONFIG.maxHistoryRecords) {
+                locations.shift();
+            }
+
+            updateStats();
+            showStatus('ตำแหน่งอัปเดตแล้ว', 'success');
+        }
+
+        // Handle errors
+        function handleError(error) {
+            let errorMsg = '';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = 'ไม่ได้รับอนุญาตให้เข้าถึง GPS';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = 'ไม่สามารถหาตำแหน่ง GPS ได้';
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = 'การค้นหา GPS หมดเวลา';
+                    break;
+                default:
+                    errorMsg = 'เกิดข้อผิดพลาด: ' + error.message;
+            }
+            showStatus(errorMsg, 'error');
+        }
+
+        // Update map
+        function updateMap(lat, lng, accuracy) {
+            const location = { lat: lat, lng: lng };
+
+            // Update map center
+            map.setCenter(location);
+
+            // Remove old marker
+            if (marker) {
+                marker.setMap(null);
+            }
+
+            // Add new marker
+            marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: 'ตำแหน่งปัจจุบัน',
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#667eea',
+                    fillOpacity: 1,
+                    strokeColor: '#fff',
+                    strokeWeight: 2
+                }
+            });
+
+            // Add accuracy circle
+            const circle = new google.maps.Circle({
+                map: map,
+                center: location,
+                radius: accuracy,
+                fillColor: '#667eea',
+                fillOpacity: 0.1,
+                strokeColor: '#667eea',
+                strokeOpacity: 0.3,
+                strokeWeight: 1
+            });
+
+            // Add point to polyline
+            polyline.getPath().push(location);
+        }
+
+        // Add to history
+        function addToHistory(location) {
+            const historyList = document.getElementById('historyList');
+
+            if (historyList.querySelector('.no-history')) {
+                historyList.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div class="history-item-time">${location.timestamp.toLocaleTimeString('th-TH')}</div>
+                <div class="history-item-coords">
+                    Lat: ${location.latitude.toFixed(6)}, Lng: ${location.longitude.toFixed(6)}<br>
+                    Accuracy: ${location.accuracy}m
+                </div>
+            `;
+
+            historyList.insertBefore(item, historyList.firstChild);
+
+            // Limit displayed items
+            while (historyList.children.length > 20) {
+                historyList.removeChild(historyList.lastChild);
+            }
+
+            document.getElementById('historyCount').textContent = `บันทึก: ${locations.length}`;
+        }
+
+        // Clear history
+        window.clearHistory = function() {
+            if (confirm('ต้องการล้างประวัติทั้งหมดหรือไม่?')) {
+                locations = [];
+                totalDistance = 0;
+                document.getElementById('historyList').innerHTML = '<div class="no-history">ยังไม่มีประวัติตำแหน่ง</div>';
+                document.getElementById('historyCount').textContent = 'บันทึก: 0';
+                updateStats();
+                showStatus('ล้างประวัติแล้ว', 'success');
+            }
+        };
+
+        // Calculate distance using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalRecords').textContent = locations.length;
+
+            if (locations.length > 0) {
+                const avgAccuracy = Math.round(
+                    locations.reduce((sum, loc) => sum + loc.accuracy, 0) / locations.length
+                );
+                document.getElementById('avgAccuracy').textContent = avgAccuracy + ' m';
+            } else {
+                document.getElementById('avgAccuracy').textContent = '-';
+            }
+
+            document.getElementById('totalDistance').textContent = (totalDistance / 1000).toFixed(2) + ' km';
+        }
+
+        // Export data
+        window.exportData = function() {
+            if (locations.length === 0) {
+                showStatus('ไม่มีข้อมูลให้ส่งออก', 'warning');
+                return;
+            }
+
+            const data = {
+                exportDate: new Date().toISOString(),
+                totalLocations: locations.length,
+                totalDistance: totalDistance,
+                locations: locations
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gps_data_${new Date().getTime()}.json`;
+            link.click();
+
+            showStatus('ส่งออกข้อมูลเรียบร้อย', 'success');
+        };
+
+        // Download GPX format
+        window.downloadGPX = function() {
+            if (locations.length === 0) {
+                showStatus('ไม่มีข้อมูลให้ส่งออก', 'warning');
+                return;
+            }
+
+            let gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPS Location Tracker">
+  <trk>
+    <name>GPS Track</name>
+    <trkseg>`;
+
+            locations.forEach(loc => {
+                gpx += `
+      <trkpt lat="${loc.latitude}" lon="${loc.longitude}">
+        <ele>${loc.altitude || 0}</ele>
+        <time>${loc.timestamp.toISOString()}</time>
+        <extensions>
+          <accuracy>${loc.accuracy}</accuracy>
+        </extensions>
+      </trkpt>`;
+            });
+
+            gpx += `
+    </trkseg>
+  </trk>
+</gpx>`;
+
+            const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gps_track_${new Date().getTime()}.gpx`;
+            link.click();
+
+            showStatus('ดาวน์โหลด GPX เรียบร้อย', 'success');
+        };
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        // Show map status
+        function showMapStatus(message, type) {
+            const statusDiv = document.getElementById('mapStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            initMap();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', function() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>

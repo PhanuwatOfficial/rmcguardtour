@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e40af">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Patrol">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <title>ตรวจจุดการเดินตรวจ</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  
+  <!-- QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      color: #1e40af;
+      margin-bottom: 5px;
+    }
+    
+    .user-info {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .scanner-container {
+      background: #000;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+    
+    #qr-reader {
+      width: 100%;
+      border: none;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 15px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-emergency {
+      background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .image-upload {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .image-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      background: #f3f4f6;
+    }
+    
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .image-preview .remove {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+    
+    .add-image-btn {
+      width: 80px;
+      height: 80px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: #94a3b8;
+    }
+    
+    .checkpoint-info {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .checkpoint-info h3 {
+      color: #1e40af;
+      margin-bottom: 5px;
+    }
+    
+    .checkpoint-info p {
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .success-message {
+      background: #dcfce7;
+      color: #166534;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🔍 ระบบตรวจจุด</h1>
+      <div class="user-info" id="userInfo">กำลังโหลด...</div>
+    </div>
+    
+    <!-- Main Screen -->
+    <div id="mainScreen">
+      <div class="card">
+        <button class="btn btn-primary" onclick="startScanning()">
+          📷 สแกน QR Code
+        </button>
+        <button class="btn btn-emergency" onclick="showEmergencyForm()">
+          🚨 รายงานเหตุฉุกเฉิน
+        </button>
+        <button class="btn btn-secondary" onclick="showHistory()">
+          📋 ประวัติการตรวจ
+        </button>
+      </div>
+    </div>
+    
+    <!-- Scanner Screen -->
+    <div id="scannerScreen" class="hidden">
+      <div class="card">
+        <div class="scanner-container">
+          <div id="qr-reader"></div>
+        </div>
+        <button class="btn btn-secondary" onclick="stopScanning()">
+          ❌ ยกเลิก
+        </button>
+      </div>
+    </div>
+    
+    <!-- Inspection Form -->
+    <div id="inspectionForm" class="hidden">
+      <div class="card">
+        <div class="checkpoint-info" id="checkpointInfo"></div>
+        
+        <div class="form-group">
+          <label>📸 ถ่ายรูปประกอบ (1-3 รูป)</label>
+          <div class="image-upload" id="imageUpload">
+            <label class="add-image-btn">
+              +
+              <input type="file" accept="image/*" capture="environment" 
+                     style="display: none;" onchange="handleImageSelect(event)" multiple>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>📝 หมายเหตุ</label>
+          <textarea id="notes" placeholder="บันทึกรายละเอียดการตรวจ..."></textarea>
+        </div>
+        
+        <div id="uploadProgress" class="hidden">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>กำลังอัพโหลด...</p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="submitInspection()">
+          ✅ บันทึกการตรวจ
+        </button>
+        <button class="btn btn-secondary" onclick="cancelInspection()">
+          ❌ ยกเลิก
+        </button>
+      </div>
+    </div>
+    
+    <!-- Emergency Form -->
+    <div id="emergencyForm" class="hidden">
+      <div class="card">
+        <h2 style="color: #dc2626; margin-bottom: 20px;">🚨 รายงานเหตุฉุกเฉิน</h2>
+        
+        <div class="form-group">
+          <label>ประเภทเหตุการณ์</label>
+          <select id="emergencyType" style="width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e5e7eb; font-size: 16px;">
+            <option value="fire">🔥 ไฟไหม้</option>
+            <option value="accident">⚠️ อุบัติเหตุ</option>
+            <option value="security">🔒 ความปลอดภัย</option>
+            <option value="medical">🏥 ฉุกเฉินทางการแพทย์</option>
+            <option value="other">📌 อื่นๆ</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>หัวข้อ</label>
+          <input type="text" id="emergencyTitle" placeholder="สรุปเหตุการณ์..." 
+                 style="width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #e5e7eb; font-size: 16px;">
+        </div>
+        
+        <div class="form-group">
+          <label>รายละเอียด</label>
+          <textarea id="emergencyDescription" placeholder="อธิบายรายละเอียดเหตุการณ์..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>📸 ถ่ายรูปประกอบ</label>
+          <div class="image-upload" id="emergencyImageUpload">
+            <label class="add-image-btn">
+              +
+              <input type="file" accept="image/*" capture="environment" 
+                     style="display: none;" onchange="handleEmergencyImageSelect(event)" multiple>
+            </label>
+          </div>
+        </div>
+        
+        <button class="btn btn-emergency" onclick="submitEmergency()">
+          🚨 ส่งรายงาน
+        </button>
+        <button class="btn btn-secondary" onclick="cancelEmergency()">
+          ❌ ยกเลิก
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="cloudinary-uploader.js"></script>
+  <script src="qr-scanner.js"></script>
+  <script src="inspection-recorder.js"></script>
+  <script src="inspector-app.js"></script>
+</body>
+</html>

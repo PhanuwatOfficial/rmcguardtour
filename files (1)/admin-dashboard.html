@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e40af">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <title>Admin Dashboard - Patrol System</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  
+  <!-- QR Code Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 250px;
+      height: 100vh;
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      color: white;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 20px;
+    }
+    
+    .nav-item {
+      padding: 15px;
+      margin-bottom: 5px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .nav-item.active {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .main-content {
+      margin-left: 250px;
+      padding: 30px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+    }
+    
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stat-card h3 {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+    
+    .stat-card .number {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1e40af;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+    
+    .card h2 {
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #475569;
+    }
+    
+    tr:hover {
+      background: #f8fafc;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .badge-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .badge-warning {
+      background: #fef3c7;
+      color: #854d0e;
+    }
+    
+    .badge-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #334155;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #1e40af;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    .qr-display {
+      text-align: center;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 60px;
+      }
+      
+      .sidebar h2,
+      .nav-item span {
+        display: none;
+      }
+      
+      .main-content {
+        margin-left: 60px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>🔍 Patrol System</h2>
+    <div class="nav-item active" onclick="showDashboard()">
+      <span>📊</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showCheckpoints()">
+      <span>📍</span>
+      <span>จุดตรวจ</span>
+    </div>
+    <div class="nav-item" onclick="showInspections()">
+      <span>✅</span>
+      <span>ประวัติการตรวจ</span>
+    </div>
+    <div class="nav-item" onclick="showSchedules()">
+      <span>📅</span>
+      <span>ตารางตรวจ</span>
+    </div>
+    <div class="nav-item" onclick="showEmergencies()">
+      <span>🚨</span>
+      <span>รายงานฉุกเฉิน</span>
+    </div>
+    <div class="nav-item" onclick="showUsers()">
+      <span>👥</span>
+      <span>ผู้ใช้งาน</span>
+    </div>
+  </div>
+  
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="header">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="user-menu">
+        <span id="userName">Admin</span>
+        <button class="btn btn-secondary" onclick="logout()">ออกจากระบบ</button>
+      </div>
+    </div>
+    
+    <!-- Dashboard View -->
+    <div id="dashboardView">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>การตรวจวันนี้</h3>
+          <div class="number" id="todayInspections">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>จุดตรวจทั้งหมด</h3>
+          <div class="number" id="totalCheckpoints">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>รายงานฉุกเฉิน</h3>
+          <div class="number" id="emergencyReports">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>ผู้ตรวจการ</h3>
+          <div class="number" id="totalInspectors">0</div>
+        </div>
+      </div>
+      
+      <!-- Charts -->
+      <div class="card">
+        <h2>📈 สถิติการตรวจ 7 วันล่าสุด</h2>
+        <canvas id="inspectionChart" height="80"></canvas>
+      </div>
+      
+      <!-- Recent Activity -->
+      <div class="card">
+        <h2>🕐 กิจกรรมล่าสุด</h2>
+        <div id="recentActivity">กำลังโหลด...</div>
+      </div>
+    </div>
+    
+    <!-- Checkpoints View -->
+    <div id="checkpointsView" class="hidden">
+      <div style="margin-bottom: 20px;">
+        <button class="btn btn-primary" onclick="showAddCheckpointModal()">
+          ➕ เพิ่มจุดตรวจ
+        </button>
+      </div>
+      
+      <div class="card">
+        <table id="checkpointsTable">
+          <thead>
+            <tr>
+              <th>ชื่อจุดตรวจ</th>
+              <th>ตำแหน่ง</th>
+              <th>โซน</th>
+              <th>สถานะ</th>
+              <th>การดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Inspections View -->
+    <div id="inspectionsView" class="hidden">
+      <div class="card">
+        <h2>ประวัติการตรวจ</h2>
+        <table id="inspectionsTable">
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>จุดตรวจ</th>
+              <th>ผู้ตรวจ</th>
+              <th>หมายเหตุ</th>
+              <th>รูปภาพ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Emergency View -->
+    <div id="emergenciesView" class="hidden">
+      <div class="card">
+        <h2>🚨 รายงานเหตุฉุกเฉิน</h2>
+        <table id="emergenciesTable">
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>ประเภท</th>
+              <th>หัวข้อ</th>
+              <th>ผู้รายงาน</th>
+              <th>สถานะ</th>
+              <th>การดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Checkpoint Modal -->
+  <div id="addCheckpointModal" class="modal">
+    <div class="modal-content">
+      <h2>➕ เพิ่มจุดตรวจใหม่</h2>
+      
+      <div class="form-group">
+        <label>ชื่อจุดตรวจ</label>
+        <input type="text" id="checkpointName" placeholder="เช่น จุดตรวจหน้าโรงงาน">
+      </div>
+      
+      <div class="form-group">
+        <label>ตำแหน่ง</label>
+        <input type="text" id="checkpointLocation" placeholder="เช่น อาคาร A ชั้น 1">
+      </div>
+      
+      <div class="form-group">
+        <label>โซน</label>
+        <input type="text" id="checkpointZone" placeholder="เช่น A1">
+      </div>
+      
+      <div class="form-group">
+        <label>รายละเอียด</label>
+        <textarea id="checkpointDescription" rows="3" placeholder="รายละเอียดการตรวจ..."></textarea>
+      </div>
+      
+      <div class="qr-display hidden" id="qrDisplay">
+        <h3>QR Code ของจุดตรวจนี้</h3>
+        <div id="qrcode"></div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-primary" onclick="saveCheckpoint()">บันทึก</button>
+        <button class="btn btn-secondary" onclick="closeCheckpointModal()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="qr-generator.js"></script>
+  <script src="cloudinary-uploader.js"></script>
+  <script src="admin-dashboard.js"></script>
+</body>
+</html>

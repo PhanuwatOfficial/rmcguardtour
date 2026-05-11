@@ -1,0 +1,2612 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแสกนจุดตรวจ</title>
+
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2E5AAC;
+            --secondary-color: #4CAF50;
+            --danger-color: #F44336;
+            --warning-color: #FF9800;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --gray-color: #6c757d;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #1a3d7c);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .user-role {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            background-color: white;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .nav-tab:hover {
+            background-color: rgba(46, 90, 172, 0.05);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Card Styles */
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(46, 90, 172, 0.1);
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a3d7c;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #3d8b40;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e68900;
+        }
+
+        /* Grid System */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -0.75rem;
+        }
+
+        .col {
+            flex: 1;
+            padding: 0 0.75rem;
+        }
+
+        .col-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            padding: 0 0.75rem;
+        }
+
+        .col-4 {
+            flex: 0 0 33.333%;
+            max-width: 33.333%;
+            padding: 0 0.75rem;
+        }
+
+        /* Scanner Section */
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #scanner {
+            width: 100%;
+            max-width: 500px;
+            height: 350px;
+            background-color: #f1f1f1;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        #scanner video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scanner-frame {
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--primary-color);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(46, 90, 172, 0.5);
+        }
+
+        /* QR Code Display */
+        .qrcode-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        #qrcode {
+            margin: 1rem 0;
+        }
+
+        /* Map Container */
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-completed {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .status-pending {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-missed {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-info {
+            background-color: rgba(33, 150, 243, 0.1);
+            color: #1976d2;
+        }
+
+        .alert-success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: #2e7d32;
+        }
+
+        .alert-warning {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: #ef6c00;
+        }
+
+        /* Emergency Button */
+        .emergency-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .emergency-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .col,
+            .col-6,
+            .col-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .nav-tabs {
+                overflow-x: scroll;
+            }
+
+            .nav-tab {
+                padding: 0.8rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            #map {
+                height: 300px;
+            }
+
+            .emergency-btn {
+                bottom: 5rem;
+                right: 1rem;
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* Desktop Specific */
+        @media (min-width: 992px) {
+            .desktop-only {
+                display: block;
+            }
+
+            .mobile-only {
+                display: none;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Hidden Class */
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 511px) {
+            .nav-tabs {
+                display: none !important;
+            }
+
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                display: flex;
+                justify-content: space-around;
+                padding: 8px 0;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                border-top: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                color: #666;
+                text-decoration: none;
+                font-size: 0.75rem;
+                padding: 4px 0;
+                width: 16.66%;
+                transition: all 0.2s ease;
+            }
+
+            .mobile-nav-item i {
+                font-size: 1.25rem;
+                margin-bottom: 4px;
+            }
+
+            .mobile-nav-item.active {
+                color: #1976d2;
+            }
+        }
+
+        @media (min-width: 512px) {
+            .mobile-nav {
+                display: none !important;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <h1>ระบบแสกนจุดตรวจ</h1>
+            </div>
+            <div class="user-role">
+                <i class="fas fa-user"></i>
+                <span id="current-role">เจ้าหน้าที่ความปลอดภัย (จป.)</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab" data-tab="scan">
+                <i class="fas fa-qrcode"></i> แสกนจุดตรวจ
+            </button>
+            <button class="nav-tab active" data-tab="checkpoints">
+                <i class="fas fa-map-marker-alt"></i> จุดตรวจ
+            </button>
+            <button class="nav-tab" data-tab="schedules">
+                <i class="fas fa-clock"></i> รอบตรวจ
+            </button>
+            <button class="nav-tab" data-tab="records">
+                <i class="fas fa-history"></i> บันทึกการตรวจ
+            </button>
+            <button class="nav-tab" data-tab="emergencies">
+                <i class="fas fa-exclamation-triangle"></i> เหตุฉุกเฉิน
+            </button>
+            <button class="nav-tab" data-tab="map">
+                <i class="fas fa-map"></i> แผนที่จุดตรวจ
+            </button>
+        </div>
+
+        <nav class="mobile-nav">
+            <a href="#" class="mobile-nav-item" data-tab="scan">
+                <i class="fas fa-qrcode"></i>
+                <span>แสกน</span>
+            </a>
+            <a href="#" class="mobile-nav-item active" data-tab="checkpoints">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>จุดตรวจ</span>
+            </a>
+            <a href="#" class="mobile-nav-item" data-tab="schedules">
+                <i class="fas fa-clock"></i>
+                <span>รอบตรวจ</span>
+            </a>
+            <a href="#" class="mobile-nav-item" data-tab="records">
+                <i class="fas fa-history"></i>
+                <span>บันทึก</span>
+            </a>
+            <a href="#" class="mobile-nav-item" data-tab="emergencies">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>เหตุฉุกเฉิน</span>
+            </a>
+            <a href="#" class="mobile-nav-item" data-tab="map">
+                <i class="fas fa-map"></i>
+                <span>แผนที่</span>
+            </a>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Scan Tab -->
+            <div id="scan-tab" class="tab-content hidden">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-qrcode"></i> แสกน QR Code จุดตรวจ
+                    </h2>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>ขั้นตอนการแสกน:</strong> นำกล้องไปยัง QR Code จุดตรวจที่กำหนด
+                            และรอจนระบบตรวจจับโค้ดอัตโนมัติ
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="scanner-container">
+                                <div id="scanner">
+                                    <div class="scanner-overlay">
+                                        <div class="scanner-frame"></div>
+                                    </div>
+                                    <video id="scanner-video" autoplay playsinline></video>
+                                </div>
+                                <div class="row">
+                                    <button id="start-scanner" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> เริ่มแสกน
+                                    </button>
+                                    <button id="stop-scanner" class="btn btn-danger hidden">
+                                        <i class="fas fa-stop"></i> หยุดแสกน
+                                    </button>
+                                    <button id="switch-camera" class="btn btn-secondary">
+                                        <i class="fas fa-camera-retro"></i> เปลี่ยนกล้อง
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="card">
+                                <h3 class="card-title">
+                                    <i class="fas fa-info-circle"></i> ข้อมูลการแสกนล่าสุด
+                                </h3>
+                                <div id="scan-result">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <div>ยังไม่มีการแสกนในครั้งนี้</div>
+                                    </div>
+                                </div>
+
+                                <div id="scan-details" class="hidden">
+                                    <div class="form-group">
+                                        <label class="form-label">ชื่อจุดตรวจ</label>
+                                        <input type="text" id="checkpoint-name" class="form-control" readonly>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">สถานะ</label>
+                                        <div id="checkpoint-status" class="status-badge status-pending">กำลังตรวจสอบ
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">เวลาที่แสกน</label>
+                                        <input type="text" id="scan-time" class="form-control" readonly>
+                                    </div>
+
+                                    <button id="confirm-scan" class="btn btn-primary">
+                                        <i class="fas fa-check"></i> ยืนยันการแสกน
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checkpoints Tab -->
+            <div id="checkpoints-tab" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-map-marker-alt"></i> จุดตรวจทั้งหมด
+                    </h2>
+                    <button id="add-checkpoint-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> เพิ่มจุดตรวจใหม่
+                    </button>
+                </div>
+
+                <div id="checkpoints-list" class="row">
+                    <!-- Checkpoints will be loaded here -->
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Add Checkpoint Form -->
+                <div id="add-checkpoint-form" class="card hidden">
+                    <h3 class="card-title">
+                        <i class="fas fa-plus-circle"></i> เพิ่มจุดตรวจใหม่
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">ชื่อจุดตรวจ</label>
+                                <input type="text" id="checkpoint-name-input" class="form-control"
+                                    placeholder="เช่น จุดตรวจประตูหน้า">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">รายละเอียดจุดตรวจ</label>
+                                <textarea id="checkpoint-description" class="form-control" rows="3"
+                                    placeholder="รายละเอียดจุดตรวจ..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">ตำแหน่ง (สถานที่)</label>
+                                <input type="text" id="checkpoint-location" class="form-control"
+                                    placeholder="เช่น อาคาร A ชั้น 1">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">เลือกรูปภาพจุดตรวจ (อัปโหลดไป Cloudinary)</label>
+                                <input type="file" id="checkpoint-image" class="form-control" accept="image/*">
+                                <div id="image-preview" class="hidden" style="margin-top: 10px;">
+                                    <img id="preview-img" src="" alt="Preview"
+                                        style="max-width: 200px; border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">QR Code สำหรับจุดตรวจนี้</label>
+                                <div id="checkpoint-qrcode" class="qrcode-container">
+                                    <p>QR Code จะถูกสร้างขึ้นอัตโนมัติหลังจากบันทึกจุดตรวจ</p>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <button id="save-checkpoint" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> บันทึกจุดตรวจ
+                                </button>
+                                <button id="cancel-checkpoint" class="btn btn-danger">
+                                    <i class="fas fa-times"></i> ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedules Tab -->
+            <div id="schedules-tab" class="tab-content hidden">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-clock"></i> กำหนดรอบตรวจ
+                    </h2>
+                    <button id="add-schedule-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> เพิ่มรอบตรวจใหม่
+                    </button>
+                </div>
+
+                <div id="schedules-list">
+                    <!-- Schedules will be loaded here -->
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Add Schedule Form -->
+                <div id="add-schedule-form" class="card hidden">
+                    <h3 class="card-title">
+                        <i class="fas fa-plus-circle"></i> เพิ่มรอบตรวจใหม่
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">ชื่อรอบตรวจ</label>
+                                <input type="text" id="schedule-name" class="form-control"
+                                    placeholder="เช่น รอบตรวจกลางวัน">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">จุดตรวจที่เกี่ยวข้อง</label>
+                                <select id="schedule-checkpoints" class="form-control" multiple>
+                                    <!-- Options will be loaded from Firebase -->
+                                </select>
+                                <small class="form-text">กด Ctrl (หรือ Command บน Mac) เพื่อเลือกหลายจุดตรวจ</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">เวลากำหนดเตือนล่วงหน้า (นาที)</label>
+                                <input type="number" id="notification-time" class="form-control" min="1" max="60"
+                                    value="15">
+                                <small class="form-text">ระบบจะแจ้งเตือนก่อนถึงเวลาตรวจตามจำนวนนาทีที่กำหนด</small>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">เวลาเริ่มต้นตรวจ</label>
+                                <input type="time" id="start-time" class="form-control" value="08:00">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">เวลาสิ้นสุดตรวจ</label>
+                                <input type="time" id="end-time" class="form-control" value="17:00">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">วันที่ใช้งานรอบตรวจนี้</label>
+                                <div>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="mon" checked> จันทร์
+                                    </label>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="tue" checked> อังคาร
+                                    </label>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="wed" checked> พุธ
+                                    </label>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="thu" checked> พฤหัส
+                                    </label>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="fri" checked> ศุกร์
+                                    </label>
+                                    <label class="form-label" style="display: inline-block; margin-right: 15px;">
+                                        <input type="checkbox" name="schedule-days" value="sat"> เสาร์
+                                    </label>
+                                    <label class="form-label" style="display: inline-block;">
+                                        <input type="checkbox" name="schedule-days" value="sun"> อาทิตย์
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <button id="save-schedule" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> บันทึกรอบตรวจ
+                                </button>
+                                <button id="cancel-schedule" class="btn btn-danger">
+                                    <i class="fas fa-times"></i> ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Records Tab -->
+            <div id="records-tab" class="tab-content hidden">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-history"></i> บันทึกการตรวจทั้งหมด
+                    </h2>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>วันที่/เวลา</th>
+                                    <th>จุดตรวจ</th>
+                                    <th>ผู้ตรวจ</th>
+                                    <th>สถานะ</th>
+                                    <th>หมายเหตุ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="records-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">กำลังโหลดข้อมูล...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergencies Tab -->
+            <div id="emergencies-tab" class="tab-content hidden">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i> บันทึกเหตุฉุกเฉิน
+                    </h2>
+                    <button id="add-emergency-btn" class="btn btn-danger">
+                        <i class="fas fa-plus"></i> บันทึกเหตุฉุกเฉิน
+                    </button>
+                </div>
+
+                <div id="emergencies-list">
+                    <!-- Emergencies will be loaded here -->
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Add Emergency Form -->
+                <div id="add-emergency-form" class="card hidden">
+                    <h3 class="card-title">
+                        <i class="fas fa-exclamation-circle"></i> บันทึกเหตุฉุกเฉิน
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">หัวข้อเหตุฉุกเฉิน</label>
+                                <input type="text" id="emergency-title" class="form-control"
+                                    placeholder="เช่น อัคคีภัย, อุบัติเหตุ">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">รายละเอียดเหตุฉุกเฉิน</label>
+                                <textarea id="emergency-details" class="form-control" rows="4"
+                                    placeholder="รายละเอียดเหตุการณ์..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">ระดับความรุนแรง</label>
+                                <select id="emergency-level" class="form-control">
+                                    <option value="low">ต่ำ (ไม่รุนแรง)</option>
+                                    <option value="medium" selected>ปานกลาง</option>
+                                    <option value="high">สูง (รุนแรง)</option>
+                                    <option value="critical">วิกฤต</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">ตำแหน่งที่เกิดเหตุ</label>
+                                <input type="text" id="emergency-location" class="form-control"
+                                    placeholder="เช่น อาคารบริหาร ชั้น 2">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">บันทึกรูปภาพ (ถ้ามี)</label>
+                                <input type="file" id="emergency-image" class="form-control" accept="image/*">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">รายชื่อผู้เกี่ยวข้อง (ถ้ามี)</label>
+                                <input type="text" id="emergency-involved" class="form-control"
+                                    placeholder="ชื่อผู้เกี่ยวข้อง">
+                            </div>
+
+                            <div class="row">
+                                <button id="save-emergency" class="btn btn-danger">
+                                    <i class="fas fa-save"></i> บันทึกเหตุฉุกเฉิน
+                                </button>
+                                <button id="cancel-emergency" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Tab -->
+            <div id="map-tab" class="tab-content hidden">
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="fas fa-map"></i> แผนที่จุดตรวจทั้งหมด
+                    </h2>
+                    <p>แสดงตำแหน่งจุดตรวจทั้งหมดบนแผนที่ รวมถึงบันทึกการตรวจล่าสุด</p>
+                </div>
+
+                <div class="card">
+                    <div id="map"></div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i> สถานะจุดตรวจล่าสุด
+                    </h3>
+                    <div id="map-legend" class="row">
+                        <div class="col-4">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 20px; height: 20px; background-color: #4CAF50; border-radius: 50%;">
+                                </div>
+                                <span>ตรวจแล้ว (ภายในเวลา)</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 20px; height: 20px; background-color: #FF9800; border-radius: 50%;">
+                                </div>
+                                <span>รอดำเนินการ</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 20px; height: 20px; background-color: #F44336; border-radius: 50%;">
+                                </div>
+                                <span>ตรวจล่าช้า/ขาด</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Emergency Button (Floating) -->
+        <button id="emergency-floating-btn" class="emergency-btn">
+            <i class="fas fa-exclamation-triangle"></i>
+        </button>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.awesome-markers/2.0.4/leaflet.awesome-markers.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Main Application Script -->
+    <script>
+        // Firebase Configuration
+        // const firebaseConfig = {
+        //     apiKey: "AIzaSyD5ZWVYevzL0Qj-H_jiVIL7WyH0vOp1kLs",
+        //     authDomain: "test2-a3a49.firebaseapp.com",
+        //     databaseURL: "https://test2-a3a49-default-rtdb.asia-southeast1.firebasedatabase.app",
+        //     projectId: "test2-a3a49",
+        //     storageBucket: "test2-a3a49.firebasestorage.app",
+        //     messagingSenderId: "210722067503",
+        //     appId: "1:210722067503:web:069f168981aa965392a2da",
+        //     measurementId: "G-FEDYDSVGZC"
+        // };
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOhjzcF_MK3A4G7QcbsAO9CHVcu_qqMRc",
+            authDomain: "orgn-94d81.firebaseapp.com",
+            databaseURL: "https://orgn-94d81-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "orgn-94d81",
+            storageBucket: "orgn-94d81.firebasestorage.app",
+            messagingSenderId: "813852741670",
+            appId: "1:813852741670:web:0ac4955492335a257996e7",
+            measurementId: "G-LBNT29CPM2"
+        };
+
+        // Cloudinary Configuration
+        const cloudinaryConfig = {
+            cloudName: "domvtfj1i",
+            uploadPreset: "testclaimdata",
+            apiKey: "956358336591924",
+            pid: "e2a06caa-be00-455e-9808-8a7df76618e9"
+        };
+
+        // ...existing code...
+        async function uploadToCloudinary(file) {
+            const cloudName = "domvtfj1i";
+            const uploadPreset = "testclaimdata";
+            const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", uploadPreset);
+            formData.append("folder", "CHECK"); // เพิ่มบรรทัดนี้
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+                return data.secure_url;
+            } catch (error) {
+                console.error("Error uploading to Cloudinary:", error);
+                return null;
+            }
+        }
+        // ...existing code...
+
+        //prompt: แก้ให้เอารูปไว้ใน folder formData.append("folder", "CHECK");
+
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Application State
+        let currentUserRole = 'safety_officer'; // 'security_guard' or 'safety_officer'
+        let checkpoints = [];
+        let schedules = [];
+        let scanRecords = [];
+        let emergencies = [];
+        let map = null;
+        let mapMarkers = [];
+        let currentScanner = null;
+        let currentStream = null;
+        let currentCamera = 'environment';
+
+        // DOM Elements
+        const tabButtons = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const currentRoleElement = document.getElementById('current-role');
+        const emergencyFloatingBtn = document.getElementById('emergency-floating-btn');
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeTabs();
+            initializeEventListeners();
+            loadInitialData();
+            initializeMap();
+            setupRoleSwitcher();
+
+            // เพิ่ม event สำหรับ mobile-nav
+            document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const tabId = this.getAttribute('data-tab');
+
+                    // เปลี่ยน active ที่ mobile-nav
+                    document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // เปลี่ยน active ที่ .nav-tab ด้วย (เพื่อ sync)
+                    document.querySelectorAll('.nav-tab').forEach(btn => {
+                        if (btn.getAttribute('data-tab') === tabId) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    });
+
+                    // แสดง tab-content ที่เลือก
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                    const showTab = document.getElementById(tabId + '-tab');
+                    if (showTab) showTab.classList.remove('hidden');
+
+                    // ถ้าเลือก map ให้ update map ด้วย
+                    if (tabId === 'map') {
+                        setTimeout(updateMap, 100);
+                    }
+                });
+            });
+        });
+
+        // Initialize Tab Navigation
+        function initializeTabs() {
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const tabId = this.getAttribute('data-tab');
+
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Show selected tab content
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+
+                    // If map tab is selected, update map
+                    if (tabId === 'map') {
+                        setTimeout(updateMap, 100);
+                    }
+                });
+            });
+        }
+
+        // Initialize Event Listeners
+        function initializeEventListeners() {
+            // Scan Tab
+            document.getElementById('start-scanner').addEventListener('click', startScanner);
+            document.getElementById('stop-scanner').addEventListener('click', stopScanner);
+            document.getElementById('switch-camera').addEventListener('click', switchCamera);
+            document.getElementById('confirm-scan').addEventListener('click', confirmScan);
+
+            // Checkpoints Tab
+            document.getElementById('add-checkpoint-btn').addEventListener('click', showAddCheckpointForm);
+            document.getElementById('save-checkpoint').addEventListener('click', saveCheckpoint);
+            document.getElementById('cancel-checkpoint').addEventListener('click', cancelAddCheckpoint);
+            document.getElementById('checkpoint-image').addEventListener('change', previewImage);
+
+            // Schedules Tab
+            document.getElementById('add-schedule-btn').addEventListener('click', showAddScheduleForm);
+            document.getElementById('save-schedule').addEventListener('click', saveSchedule);
+            document.getElementById('cancel-schedule').addEventListener('click', cancelAddSchedule);
+
+            // Emergencies Tab
+            document.getElementById('add-emergency-btn').addEventListener('click', showAddEmergencyForm);
+            document.getElementById('save-emergency').addEventListener('click', saveEmergency);
+            document.getElementById('cancel-emergency').addEventListener('click', cancelAddEmergency);
+            emergencyFloatingBtn.addEventListener('click', showAddEmergencyForm);
+        }
+
+        // Setup Role Switcher (for demo purposes)
+        function setupRoleSwitcher() {
+            // Double-click on role to switch (demo feature)
+            currentRoleElement.addEventListener('dblclick', function () {
+                if (currentUserRole === 'safety_officer') {
+                    currentUserRole = 'security_guard';
+                    currentRoleElement.textContent = 'ผู้รักษาความปลอดภัย (รปภ.)';
+                } else {
+                    currentUserRole = 'safety_officer';
+                    currentRoleElement.textContent = 'เจ้าหน้าที่ความปลอดภัย (จป.)';
+                }
+
+                // Update UI based on role
+                updateUIForRole();
+            });
+        }
+
+        // Update UI based on current role
+        function updateUIForRole() {
+            if (currentUserRole === 'security_guard') {
+                // Security guard sees scan tab by default
+                document.querySelector('.nav-tab[data-tab="scan"]').click();
+
+                // Hide admin-only elements
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'none';
+                });
+            } else {
+                // Safety officer sees checkpoints tab by default
+                document.querySelector('.nav-tab[data-tab="checkpoints"]').click();
+
+                // Show admin-only elements
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'block';
+                });
+            }
+        }
+
+        // Load Initial Data from Firebase
+        function loadInitialData() {
+            loadCheckpoints();
+            loadSchedules();
+            loadScanRecords();
+            loadEmergencies();
+            setupNotifications();
+        }
+
+        // Load Checkpoints from Firebase
+        function loadCheckpoints() {
+            const checkpointsRef = database.ref('checkpoints');
+            checkpointsRef.on('value', (snapshot) => {
+                checkpoints = [];
+                const data = snapshot.val();
+
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        checkpoints.push({
+                            id: key,
+                            ...data[key]
+                        });
+                    });
+                }
+
+                renderCheckpointsList();
+                updateCheckpointOptions();
+            });
+        }
+
+        // Load Schedules from Firebase
+        function loadSchedules() {
+            const schedulesRef = database.ref('schedules');
+            schedulesRef.on('value', (snapshot) => {
+                schedules = [];
+                const data = snapshot.val();
+
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        schedules.push({
+                            id: key,
+                            ...data[key]
+                        });
+                    });
+                }
+
+                renderSchedulesList();
+            });
+        }
+
+        // Load Scan Records from Firebase
+        function loadScanRecords() {
+            const recordsRef = database.ref('scan_records');
+            recordsRef.on('value', (snapshot) => {
+                scanRecords = [];
+                const data = snapshot.val();
+
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        scanRecords.push({
+                            id: key,
+                            ...data[key]
+                        });
+                    });
+                }
+
+                renderScanRecordsTable();
+            });
+        }
+
+        // Load Emergencies from Firebase
+        function loadEmergencies() {
+            const emergenciesRef = database.ref('emergencies');
+            emergenciesRef.on('value', (snapshot) => {
+                emergencies = [];
+                const data = snapshot.val();
+
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        emergencies.push({
+                            id: key,
+                            ...data[key]
+                        });
+                    });
+                }
+
+                renderEmergenciesList();
+            });
+        }
+
+        // Render Checkpoints List
+        function renderCheckpointsList() {
+            const container = document.getElementById('checkpoints-list');
+
+            if (checkpoints.length === 0) {
+                container.innerHTML = `
+            <div class="col">
+                <div class="card">
+                    <p>ยังไม่มีจุดตรวจ เริ่มต้นโดยเพิ่มจุดตรวจใหม่</p>
+                </div>
+            </div>
+        `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            checkpoints.forEach(checkpoint => {
+                const checkpointCard = document.createElement('div');
+                checkpointCard.className = 'col-4';
+                const imageUrl = checkpoint.imageUrl
+                    ? checkpoint.imageUrl
+                    : '/nopic.jpg'; // รูป placeholder
+
+                checkpointCard.innerHTML = `
+                <div class="card">
+                    <h3 class="card-title" style="font-size: 1.1rem;">
+                        <i class="fas fa-map-marker-alt"></i> ${checkpoint.name}
+                    </h3>
+                    <div style="text-align:center;margin-bottom:8px;">
+                        <img src="${imageUrl}" alt="รูปจุดตรวจ" style="max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;opacity:${checkpoint.imageUrl ? '1' : '0.4'};">
+                    </div>
+                    <p><strong>ตำแหน่ง:</strong> ${checkpoint.location}</p>
+                    <p><strong>รายละเอียด:</strong> ${checkpoint.description || '-'}</p>
+                    <p><strong>สถานะ:</strong> <span class="status-badge ${getCheckpointStatusClass(checkpoint)}">${getCheckpointStatusText(checkpoint)}</span></p>
+                    <div class="row" style="margin-top: 1rem;">
+                        <button class="btn btn-secondary view-qrcode-btn" data-id="${checkpoint.id}" style="flex: 1;">
+                            <i class="fas fa-qrcode"></i> ดู QR Code
+                        </button>
+                        <button class="btn btn-danger delete-checkpoint-btn" data-id="${checkpoint.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+                container.appendChild(checkpointCard);
+            });
+
+
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.view-qrcode-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const checkpointId = this.getAttribute('data-id');
+                    viewCheckpointQRCode(checkpointId);
+                });
+            });
+
+            document.querySelectorAll('.delete-checkpoint-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const checkpointId = this.getAttribute('data-id');
+                    deleteCheckpoint(checkpointId);
+                });
+            });
+        }
+
+        function getCheckpointStatusClass(checkpoint) {
+            // หา record ล่าสุดของจุดตรวจนี้
+            const records = scanRecords
+                .filter(r => r.checkpointId === checkpoint.id)
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            if (records.length === 0) {
+                return 'status-pending'; // ยังไม่เคยตรวจ
+            }
+
+            const latest = records[0];
+            if (latest.status === 'completed') {
+                // ตรวจแล้ว (สำเร็จ)
+                return 'status-completed';
+            } else if (latest.status === 'missed') {
+                // ตรวจล่าช้า/ขาด
+                return 'status-missed';
+            } else {
+                // กำลังดำเนินการ หรือสถานะอื่น
+                return 'status-pending';
+            }
+        }
+
+        // Get checkpoint status text
+        function getCheckpointStatusText(checkpoint) {
+            const classMap = {
+                'status-completed': 'ตรวจแล้ว',
+                'status-pending': 'รอดำเนินการ',
+                'status-missed': 'ตรวจล่าช้า'
+            };
+
+            return classMap[getCheckpointStatusClass(checkpoint)];
+        }
+
+        // Render Schedules List
+        function renderSchedulesList() {
+            const container = document.getElementById('schedules-list');
+
+            if (schedules.length === 0) {
+                container.innerHTML = `
+            <div class="card">
+                <p>ยังไม่มีรอบตรวจ เริ่มต้นโดยเพิ่มรอบตรวจใหม่</p>
+            </div>
+        `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            schedules.forEach(schedule => {
+                const scheduleCard = document.createElement('div');
+                scheduleCard.className = 'card';
+                scheduleCard.style.marginBottom = '1rem';
+
+                // หา checkpoint names
+                let checkpointNames = '';
+                if (schedule.checkpoints && schedule.checkpoints.length > 0) {
+                    checkpointNames = schedule.checkpoints
+                        .map(id => {
+                            const cp = checkpoints.find(c => c.id === id);
+                            return cp ? cp.name : '(ไม่พบจุดตรวจ)';
+                        })
+                        .join(', ');
+                } else {
+                    checkpointNames = '<span style="color:#888;">-</span>';
+                }
+
+                scheduleCard.innerHTML = `
+                    <h3 class="card-title" style="font-size: 1.1rem;">
+                        <i class="fas fa-clock"></i> ${schedule.name}
+                    </h3>
+                    <div class="row">
+                        <div class="col-6">
+                            <p><strong>เวลา:</strong> ${schedule.startTime} - ${schedule.endTime}</p>
+                            <p><strong>เตือนล่วงหน้า:</strong> ${schedule.notificationTime} นาที</p>
+                            <p><strong>วันที่ใช้งาน:</strong> ${getScheduleDaysText(schedule.days)}</p>
+                        </div>
+                        <div class="col-6">
+                            <p><strong>จุดตรวจที่เกี่ยวข้อง:</strong> ${schedule.checkpoints ? schedule.checkpoints.length : 0} จุด</p>
+                            <ul style="margin:0 0 8px 18px;padding:0;font-size:0.97em;color:#444;">
+                                ${checkpointNames.split(', ').map(name => `<li>${name}</li>`).join('')}
+                            </ul>
+                            <div class="row" style="margin-top: 1rem;">
+                                <button class="btn btn-secondary edit-schedule-btn" data-id="${schedule.id}">
+                                    <i class="fas fa-edit"></i> แก้ไข
+                                </button>
+                                <button class="btn btn-danger delete-schedule-btn" data-id="${schedule.id}">
+                                    <i class="fas fa-trash"></i> ลบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+    `;
+                container.appendChild(scheduleCard);
+            });
+
+            // เพิ่ม event listener สำหรับปุ่มแก้ไข/ลบ หลังจากสร้างปุ่มเสร็จ
+            document.querySelectorAll('.edit-schedule-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const scheduleId = this.getAttribute('data-id');
+                    editSchedule(scheduleId);
+                });
+            });
+
+            document.querySelectorAll('.delete-schedule-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const scheduleId = this.getAttribute('data-id');
+                    deleteSchedule(scheduleId);
+                });
+            });
+        }
+
+        // ฟังก์ชันแก้ไขรอบตรวจ
+        function editSchedule(scheduleId) {
+            const schedule = schedules.find(s => s.id === scheduleId);
+            if (!schedule) return;
+
+            // แสดงฟอร์มแก้ไขและเติมข้อมูลเดิม
+            document.getElementById('add-schedule-form').classList.remove('hidden');
+            document.getElementById('add-schedule-btn').classList.add('hidden');
+            document.getElementById('schedules-list').classList.add('hidden');
+
+            document.getElementById('schedule-name').value = schedule.name;
+            document.getElementById('start-time').value = schedule.startTime;
+            document.getElementById('end-time').value = schedule.endTime;
+            document.getElementById('notification-time').value = schedule.notificationTime;
+
+            // เลือกจุดตรวจ
+            const checkpointSelect = document.getElementById('schedule-checkpoints');
+            Array.from(checkpointSelect.options).forEach(option => {
+                option.selected = schedule.checkpoints && schedule.checkpoints.includes(option.value);
+            });
+
+            // เลือกวัน
+            document.querySelectorAll('input[name="schedule-days"]').forEach(checkbox => {
+                checkbox.checked = schedule.days && schedule.days.includes(checkbox.value);
+            });
+
+            // เปลี่ยนปุ่มบันทึกให้เป็น "อัปเดต"
+            const saveBtn = document.getElementById('save-schedule');
+            saveBtn.textContent = 'อัปเดตรอบตรวจ';
+
+            // ลบ event listener เดิม
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+            newSaveBtn.addEventListener('click', async function () {
+                // อัปเดตข้อมูลใน Firebase
+                const updatedSchedule = {
+                    ...schedule,
+                    name: document.getElementById('schedule-name').value.trim(),
+                    startTime: document.getElementById('start-time').value,
+                    endTime: document.getElementById('end-time').value,
+                    notificationTime: parseInt(document.getElementById('notification-time').value),
+                    checkpoints: Array.from(checkpointSelect.selectedOptions).map(option => option.value),
+                    days: Array.from(document.querySelectorAll('input[name="schedule-days"]:checked')).map(cb => cb.value)
+                };
+                await database.ref('schedules/' + scheduleId).set(updatedSchedule);
+                cancelAddSchedule();
+                showNotification('อัปเดตรอบตรวจสำเร็จ', `อัปเดตรอบตรวจ "${updatedSchedule.name}" เรียบร้อยแล้ว`);
+            });
+        }
+
+        // ฟังก์ชันลบรอบตรวจ
+        function deleteSchedule(scheduleId) {
+            if (confirm('คุณแน่ใจว่าต้องการลบรอบตรวจนี้?')) {
+                database.ref('schedules/' + scheduleId).remove()
+                    .then(() => {
+                        showNotification('ลบรอบตรวจสำเร็จ', 'ลบรอบตรวจเรียบร้อยแล้ว');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting schedule:', error);
+                        alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+                    });
+            }
+        }
+        // Get schedule days as text
+        function getScheduleDaysText(days) {
+            if (!days) return 'ทุกวัน';
+
+            const dayMap = {
+                'mon': 'จันทร์',
+                'tue': 'อังคาร',
+                'wed': 'พุธ',
+                'thu': 'พฤหัส',
+                'fri': 'ศุกร์',
+                'sat': 'เสาร์',
+                'sun': 'อาทิตย์'
+            };
+
+            return days.map(day => dayMap[day]).join(', ');
+        }
+
+        // Render Scan Records Table
+        function renderScanRecordsTable() {
+            const container = document.getElementById('records-table-body');
+
+            if (scanRecords.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center;">ยังไม่มีการบันทึกการตรวจ</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // Sort by timestamp (newest first)
+            const sortedRecords = [...scanRecords].sort((a, b) => b.timestamp - a.timestamp);
+
+            sortedRecords.forEach(record => {
+                const row = document.createElement('tr');
+                const date = new Date(record.timestamp);
+                const dateStr = date.toLocaleDateString('th-TH');
+                const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+                row.innerHTML = `
+                    <td>${dateStr} ${timeStr}</td>
+                    <td>${record.checkpointName || 'ไม่ระบุ'}</td>
+                    <td>${record.scannedBy || 'ไม่ระบุ'}</td>
+                    <td><span class="status-badge ${record.status === 'completed' ? 'status-completed' : 'status-pending'}">${record.status === 'completed' ? 'สำเร็จ' : 'กำลังดำเนินการ'}</span></td>
+                    <td>${record.notes || '-'}</td>
+                `;
+
+                container.appendChild(row);
+            });
+        }
+
+        // Render Emergencies List
+        function renderEmergenciesList() {
+            const container = document.getElementById('emergencies-list');
+
+            if (emergencies.length === 0) {
+                container.innerHTML = `
+                    <div class="card">
+                        <p>ยังไม่มีบันทึกเหตุฉุกเฉิน</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // Sort by timestamp (newest first)
+            const sortedEmergencies = [...emergencies].sort((a, b) => b.timestamp - a.timestamp);
+
+            sortedEmergencies.forEach(emergency => {
+                const emergencyCard = document.createElement('div');
+                emergencyCard.className = 'card';
+                emergencyCard.style.marginBottom = '1rem';
+
+                const date = new Date(emergency.timestamp);
+                const dateStr = date.toLocaleDateString('th-TH');
+                const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+                // Determine level color
+                let levelColor = '#4CAF50';
+                let levelText = 'ต่ำ';
+
+                switch (emergency.level) {
+                    case 'medium':
+                        levelColor = '#FF9800';
+                        levelText = 'ปานกลาง';
+                        break;
+                    case 'high':
+                        levelColor = '#F44336';
+                        levelText = 'สูง';
+                        break;
+                    case 'critical':
+                        levelColor = '#9C27B0';
+                        levelText = 'วิกฤต';
+                        break;
+                }
+
+                emergencyCard.innerHTML = `
+                    <h3 class="card-title" style="font-size: 1.1rem;">
+                        <i class="fas fa-exclamation-triangle"></i> ${emergency.title}
+                        <span style="background-color: ${levelColor}; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; margin-left: 0.5rem;">
+                            ${levelText}
+                        </span>
+                    </h3>
+                    <p><strong>วันที่เกิดเหตุ:</strong> ${dateStr} ${timeStr}</p>
+                    <p><strong>สถานที่:</strong> ${emergency.location}</p>
+                    <p><strong>รายละเอียด:</strong> ${emergency.details}</p>
+                    ${emergency.involved ? `<p><strong>ผู้เกี่ยวข้อง:</strong> ${emergency.involved}</p>` : ''}
+                    <div class="row" style="margin-top: 1rem;">
+                        <div class="col">
+                            <button class="btn btn-secondary resolve-emergency-btn" data-id="${emergency.id}">
+                                <i class="fas fa-check"></i> แก้ไขแล้ว
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(emergencyCard);
+            });
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.resolve-emergency-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const emergencyId = this.getAttribute('data-id');
+                    resolveEmergency(emergencyId);
+                });
+            });
+        }
+
+        // Initialize Map
+        function initializeMap() {
+            // Default to Bangkok coordinates
+            map = L.map('map').setView([13.7563, 100.5018], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+        }
+
+        // Update Map with Checkpoints
+        function updateMap() {
+            // Clear existing markers
+            mapMarkers.forEach(marker => marker.remove());
+            mapMarkers = [];
+
+            // Add checkpoints to map
+            checkpoints.forEach(checkpoint => {
+                // Generate random coordinates around Bangkok for demo
+                // In real app, these would come from checkpoint data
+                const lat = 13.7563 + (Math.random() - 0.5) * 0.05;
+                const lng = 100.5018 + (Math.random() - 0.5) * 0.05;
+
+                // Determine marker color based on status
+                let markerColor = 'orange';
+                if (getCheckpointStatusClass(checkpoint) === 'status-completed') {
+                    markerColor = 'green';
+                } else if (getCheckpointStatusClass(checkpoint) === 'status-missed') {
+                    markerColor = 'red';
+                }
+
+                const marker = L.marker([lat, lng], {
+                    icon: L.AwesomeMarkers.icon({
+                        icon: 'map-marker',
+                        markerColor: markerColor,
+                        prefix: 'fa',
+                        iconColor: 'white'
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <strong>${checkpoint.name}</strong><br>
+                    <em>${checkpoint.location}</em><br>
+                    ${checkpoint.description || ''}<br>
+                    <strong>สถานะ:</strong> ${getCheckpointStatusText(checkpoint)}
+                `);
+
+                mapMarkers.push(marker);
+            });
+        }
+
+        // Start QR Code Scanner
+        function startScanner() {
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            const video = document.getElementById('scanner-video');
+
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+
+            // Request camera access
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: currentCamera,
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            })
+                .then(stream => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+
+                    // Start scanning for QR codes
+                    currentScanner = setInterval(() => {
+                        scanQRCode(video);
+                    }, 500);
+                })
+                .catch(err => {
+                    console.error('Camera access error:', err);
+                    alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้อง');
+                    stopScanner();
+                });
+        }
+
+        // Stop QR Code Scanner
+        function stopScanner() {
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            const video = document.getElementById('scanner-video');
+
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+
+            // Stop scanner interval
+            if (currentScanner) {
+                clearInterval(currentScanner);
+                currentScanner = null;
+            }
+
+            // Stop camera stream
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+                video.srcObject = null;
+            }
+        }
+
+        // Switch between front and back camera
+        function switchCamera() {
+            stopScanner();
+            currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+            setTimeout(startScanner, 500);
+        }
+
+        // Scan for QR Code in video stream
+        function scanQRCode(videoElement) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+                // QR Code detected
+                stopScanner();
+                processScannedQRCode(code.data);
+            }
+        }
+
+        // Process Scanned QR Code
+        function processScannedQRCode(qrData) {
+            try {
+                const data = JSON.parse(qrData);
+
+                // Check if this is a valid checkpoint QR code
+                if (data.type === 'checkpoint' && data.checkpointId) {
+                    const checkpoint = checkpoints.find(cp => cp.id === data.checkpointId);
+
+                    if (checkpoint) {
+                        // Show scan result
+                        document.getElementById('scan-result').innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                <div><strong>แสกนสำเร็จ!</strong> พบจุดตรวจ: ${checkpoint.name}</div>
+                            </div>
+                        `;
+
+                        // Show scan details
+                        document.getElementById('checkpoint-name').value = checkpoint.name;
+                        document.getElementById('scan-time').value = new Date().toLocaleString('th-TH');
+                        document.getElementById('scan-details').classList.remove('hidden');
+
+                        // Get current location
+                        getCurrentLocation().then(location => {
+                            // Location will be saved when confirming scan
+                            console.log('Location obtained:', location);
+                        }).catch(err => {
+                            console.error('Error getting location:', err);
+                        });
+                    } else {
+                        document.getElementById('scan-result').innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div><strong>ไม่พบจุดตรวจ</strong> QR Code ไม่ตรงกับจุดตรวจใดในระบบ</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    document.getElementById('scan-result').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle"></i>
+                            <div><strong>QR Code ไม่ถูกต้อง</strong> โปรดแสกน QR Code ของจุดตรวจที่กำหนด</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error processing QR code:', error);
+                document.getElementById('scan-result').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i>
+                        <div><strong>ไม่สามารถอ่าน QR Code ได้</strong> โปรดลองใหม่อีกครั้ง</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Get Current Location
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by this browser.'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        });
+                    },
+                    error => {
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Confirm Scan and Save to Database
+        function confirmScan() {
+            const checkpointName = document.getElementById('checkpoint-name').value;
+
+            // Get current location
+            getCurrentLocation().then(location => {
+                // Create scan record
+                const scanRecord = {
+                    checkpointName: checkpointName,
+                    checkpointId: checkpoints.find(cp => cp.name === checkpointName)?.id,
+                    timestamp: Date.now(),
+                    scannedBy: currentUserRole === 'security_guard' ? 'Guard' : 'Admin_Guard',
+                    status: 'completed',
+                    location: location,
+                    notes: 'ตรวจสอบตามปกติ'
+                };
+
+                // Save to Firebase
+                const newRecordRef = database.ref('scan_records').push();
+                newRecordRef.set(scanRecord)
+                    .then(() => {
+                        // Show success message
+                        document.getElementById('scan-result').innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                <div><strong>บันทึกการตรวจสำเร็จ!</strong> การตรวจจุดตรวจ "${checkpointName}" ถูกบันทึกเรียบร้อยแล้ว</div>
+                            </div>
+                        `;
+
+                        // Hide scan details
+                        document.getElementById('scan-details').classList.add('hidden');
+
+                        // Update records table
+                        loadScanRecords();
+
+                        // Show notification
+                        showNotification('บันทึกการตรวจสำเร็จ', `บันทึกการตรวจจุดตรวจ "${checkpointName}" เรียบร้อยแล้ว`);
+                    })
+                    .catch(error => {
+                        console.error('Error saving scan record:', error);
+                        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                    });
+            }).catch(error => {
+                console.error('Error getting location:', error);
+                alert('ไม่สามารถรับตำแหน่ง GPS ได้: ' + error.message);
+            });
+        }
+
+        // Show Add Checkpoint Form
+        function showAddCheckpointForm() {
+            document.getElementById('add-checkpoint-form').classList.remove('hidden');
+            document.getElementById('add-checkpoint-btn').classList.add('hidden');
+            document.getElementById('checkpoints-list').classList.add('hidden');
+        }
+
+        // Cancel Add Checkpoint
+        function cancelAddCheckpoint() {
+            document.getElementById('add-checkpoint-form').classList.add('hidden');
+            document.getElementById('add-checkpoint-btn').classList.remove('hidden');
+            document.getElementById('checkpoints-list').classList.remove('hidden');
+
+            // Reset form
+            document.getElementById('checkpoint-name-input').value = '';
+            document.getElementById('checkpoint-description').value = '';
+            document.getElementById('checkpoint-location').value = '';
+            document.getElementById('checkpoint-image').value = '';
+            document.getElementById('image-preview').classList.add('hidden');
+        }
+
+        // Preview Image before Upload
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('image-preview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Save Checkpoint to Database
+        async function saveCheckpoint() {
+            const name = document.getElementById('checkpoint-name-input').value.trim();
+            const description = document.getElementById('checkpoint-description').value.trim();
+            const location = document.getElementById('checkpoint-location').value.trim();
+
+            if (!name || !location) {
+                alert('กรุณากรอกชื่อจุดตรวจและตำแหน่ง');
+                return;
+            }
+
+            const checkpointId = generateUUID();
+            const checkpoint = {
+                id: checkpointId,
+                name: name,
+                description: description,
+                location: location,
+                createdAt: Date.now(),
+                qrCodeData: JSON.stringify({
+                    type: 'checkpoint',
+                    checkpointId: checkpointId,
+                    name: name
+                })
+            };
+
+            // อัปโหลดรูปจริง
+            const imageFile = document.getElementById('checkpoint-image').files[0];
+            if (imageFile) {
+                const imageUrl = await uploadToCloudinary(imageFile);
+                if (imageUrl) {
+                    checkpoint.imageUrl = imageUrl;
+                    checkpoint.imageName = imageFile.name;
+                }
+            }
+
+            database.ref('checkpoints/' + checkpointId).set(checkpoint)
+                .then(() => {
+                    generateQRCode(checkpointId, checkpoint.name, checkpoint.qrCodeData);
+                    cancelAddCheckpoint();
+                    showNotification('เพิ่มจุดตรวจสำเร็จ', `เพิ่มจุดตรวจ "${name}" เรียบร้อยแล้ว`);
+                })
+                .catch(error => {
+                    console.error('Error saving checkpoint:', error);
+                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                });
+        }
+        // Generate QR Code for Checkpoint
+        function generateQRCode(checkpointId, checkpointName, qrData) {
+            const qrContainer = document.getElementById('checkpoint-qrcode');
+            qrContainer.innerHTML = '';
+
+            // Generate QR Code
+            const qr = qrcode(0, 'L');
+            qr.addData(qrData);
+            qr.make();
+
+            // Create QR Code image
+            const qrImage = qr.createImgTag(5);
+            qrContainer.innerHTML = `
+                <h4>${checkpointName}</h4>
+                ${qrImage}
+                <p>รหัส: ${checkpointId.substring(0, 8)}</p>
+                <button class="btn btn-secondary download-qr-btn" data-id="${checkpointId}">
+                    <i class="fas fa-download"></i> ดาวน์โหลด QR Code
+                </button>
+            `;
+
+            // Add download functionality
+            document.querySelector('.download-qr-btn').addEventListener('click', function () {
+                downloadQRCode(checkpointId, checkpointName);
+            });
+        }
+
+        // Download QR Code
+        function downloadQRCode(checkpointId, checkpointName) {
+            const canvas = document.createElement('canvas');
+            const qr = qrcode(0, 'L');
+            const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
+
+            if (checkpoint) {
+                qr.addData(checkpoint.qrCodeData);
+                qr.make();
+
+                const qrCanvas = qr.createCanvas();
+                canvas.width = qrCanvas.width;
+                canvas.height = qrCanvas.height + 40; // Extra space for text
+
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw QR Code
+                ctx.drawImage(qrCanvas, 0, 0);
+
+                // Add text below
+                ctx.fillStyle = 'black';
+                ctx.font = '14px Prompt';
+                ctx.textAlign = 'center';
+                ctx.fillText(checkpointName, canvas.width / 2, qrCanvas.height + 20);
+                ctx.font = '12px Prompt';
+                ctx.fillText(`ID: ${checkpointId.substring(0, 8)}`, canvas.width / 2, qrCanvas.height + 35);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `qrcode-${checkpointName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+
+        // View Checkpoint QR Code
+        // ...existing code...
+        function viewCheckpointQRCode(checkpointId) {
+            const checkpoint = checkpoints.find(cp => cp.id === checkpointId);
+
+            if (checkpoint) {
+                // ลบ modal เดิมถ้ามี
+                const oldModal = document.getElementById('qrcode-modal');
+                if (oldModal) oldModal.remove();
+
+                // สร้าง modal
+                const modal = document.createElement('div');
+                modal.id = 'qrcode-modal';
+                modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+                // สร้าง QR Code
+                const qr = qrcode(0, 'L');
+                qr.addData(checkpoint.qrCodeData);
+                qr.make();
+                const qrImg = qr.createImgTag(6);
+
+                modal.innerHTML = `
+            <div style="
+                background: #fff;
+                border-radius: 16px;
+                max-width: 95vw;
+                width: 340px;
+                padding: 32px 16px 16px 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+                text-align: center;
+                position: relative;
+            ">
+                <button id="close-qrcode-modal" style="
+                    position: absolute;
+                    top: 8px; right: 12px;
+                    background: none;
+                    border: none;
+                    font-size: 1.6rem;
+                    color: #888;
+                    cursor: pointer;
+                ">&times;</button>
+                <h3 style="margin:0 0 12px 0;font-size:1.1rem;">QR Code สำหรับจุดตรวจ</h3>
+                <div style="margin-bottom:12px;font-weight:600;">${checkpoint.name}</div>
+                <div style="margin-bottom:12px;">${qrImg}</div>
+                <div style="font-size:0.95rem;color:#666;">สแกน QR Code นี้เพื่อตรวจสอบจุดตรวจ</div>
+            </div>
+        `;
+
+                document.body.appendChild(modal);
+
+                document.getElementById('close-qrcode-modal').onclick = () => {
+                    modal.remove();
+                };
+
+                // ปิด modal เมื่อคลิกพื้นหลัง
+                modal.onclick = (e) => {
+                    if (e.target === modal) modal.remove();
+                };
+            }
+        }
+        // ...existing code...
+
+        // Delete Checkpoint
+        function deleteCheckpoint(checkpointId) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบจุดตรวจนี้?')) {
+                database.ref('checkpoints/' + checkpointId).remove()
+                    .then(() => {
+                        showNotification('ลบจุดตรวจสำเร็จ', 'ลบจุดตรวจเรียบร้อยแล้ว');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting checkpoint:', error);
+                        alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+                    });
+            }
+        }
+
+        // Update Checkpoint Options for Schedule Form
+        function updateCheckpointOptions() {
+            const select = document.getElementById('schedule-checkpoints');
+            select.innerHTML = '';
+
+            checkpoints.forEach(checkpoint => {
+                const option = document.createElement('option');
+                option.value = checkpoint.id;
+                option.textContent = checkpoint.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Show Add Schedule Form
+        function showAddScheduleForm() {
+            document.getElementById('add-schedule-form').classList.remove('hidden');
+            document.getElementById('add-schedule-btn').classList.add('hidden');
+            document.getElementById('schedules-list').classList.add('hidden');
+        }
+
+        // Cancel Add Schedule
+        function cancelAddSchedule() {
+            document.getElementById('add-schedule-form').classList.add('hidden');
+            document.getElementById('add-schedule-btn').classList.remove('hidden');
+            document.getElementById('schedules-list').classList.remove('hidden');
+
+            // Reset form
+            document.getElementById('schedule-name').value = '';
+            document.getElementById('notification-time').value = '15';
+            document.getElementById('start-time').value = '08:00';
+            document.getElementById('end-time').value = '17:00';
+
+            // Reset days checkboxes
+            document.querySelectorAll('input[name="schedule-days"]').forEach(checkbox => {
+                checkbox.checked = ['mon', 'tue', 'wed', 'thu', 'fri'].includes(checkbox.value);
+            });
+        }
+
+        // Save Schedule to Database
+        function saveSchedule() {
+            const name = document.getElementById('schedule-name').value.trim();
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const notificationTime = parseInt(document.getElementById('notification-time').value);
+
+            if (!name || !startTime || !endTime) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            // Get selected checkpoints
+            const checkpointSelect = document.getElementById('schedule-checkpoints');
+            const selectedCheckpoints = Array.from(checkpointSelect.selectedOptions).map(option => option.value);
+
+            // Get selected days
+            const selectedDays = [];
+            document.querySelectorAll('input[name="schedule-days"]:checked').forEach(checkbox => {
+                selectedDays.push(checkbox.value);
+            });
+
+            if (selectedDays.length === 0) {
+                alert('กรุณาเลือกอย่างน้อย 1 วัน');
+                return;
+            }
+
+            // Create schedule object
+            const schedule = {
+                id: generateUUID(),
+                name: name,
+                startTime: startTime,
+                endTime: endTime,
+                notificationTime: notificationTime,
+                checkpoints: selectedCheckpoints,
+                days: selectedDays,
+                createdAt: Date.now()
+            };
+
+            // Save to Firebase
+            database.ref('schedules/' + schedule.id).set(schedule)
+                .then(() => {
+                    // Reset form and show list
+                    cancelAddSchedule();
+
+                    // Show success message
+                    showNotification('เพิ่มรอบตรวจสำเร็จ', `เพิ่มรอบตรวจ "${name}" เรียบร้อยแล้ว`);
+                })
+                .catch(error => {
+                    console.error('Error saving schedule:', error);
+                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                });
+        }
+
+        // Show Add Emergency Form
+        function showAddEmergencyForm() {
+            // Switch to emergencies tab
+            document.querySelector('.nav-tab[data-tab="emergencies"]').click();
+
+            // Show form
+            document.getElementById('add-emergency-form').classList.remove('hidden');
+            document.getElementById('add-emergency-btn').classList.add('hidden');
+            document.getElementById('emergencies-list').classList.add('hidden');
+        }
+
+        // Cancel Add Emergency
+        function cancelAddEmergency() {
+            document.getElementById('add-emergency-form').classList.add('hidden');
+            document.getElementById('add-emergency-btn').classList.remove('hidden');
+            document.getElementById('emergencies-list').classList.remove('hidden');
+
+            // Reset form
+            document.getElementById('emergency-title').value = '';
+            document.getElementById('emergency-details').value = '';
+            document.getElementById('emergency-level').value = 'medium';
+            document.getElementById('emergency-location').value = '';
+            document.getElementById('emergency-involved').value = '';
+            document.getElementById('emergency-image').value = '';
+        }
+
+        // Save Emergency to Database
+        async function saveEmergency() {
+            const title = document.getElementById('emergency-title').value.trim();
+            const details = document.getElementById('emergency-details').value.trim();
+            const level = document.getElementById('emergency-level').value;
+            const location = document.getElementById('emergency-location').value.trim();
+            const involved = document.getElementById('emergency-involved').value.trim();
+
+            if (!title || !details || !location) {
+                alert('กรุณากรอกหัวข้อ, รายละเอียด และสถานที่เกิดเหตุ');
+                return;
+            }
+
+            const emergency = {
+                id: generateUUID(),
+                title: title,
+                details: details,
+                level: level,
+                location: location,
+                involved: involved,
+                timestamp: Date.now(),
+                status: 'active',
+                reportedBy: currentUserRole === 'security_guard' ? 'รปภ. สมชาย ใจดี' : 'จป. วิศวกร ปลอดภัย'
+            };
+
+            // อัปโหลดรูปจริง
+            const imageFile = document.getElementById('emergency-image').files[0];
+            if (imageFile) {
+                const imageUrl = await uploadToCloudinary(imageFile);
+                if (imageUrl) {
+                    emergency.imageUrl = imageUrl;
+                    emergency.imageName = imageFile.name;
+                }
+            }
+
+            database.ref('emergencies/' + emergency.id).set(emergency)
+                .then(() => {
+                    cancelAddEmergency();
+                    showNotification('บันทึกเหตุฉุกเฉินสำเร็จ', `บันทึกเหตุฉุกเฉิน "${title}" เรียบร้อยแล้ว`);
+                    if (level === 'high' || level === 'critical') {
+                        alert(`⚠️ เหตุฉุกเฉินระดับ${level === 'high' ? 'สูง' : 'วิกฤต'}!\n\n${title}\n\n${details}\n\nสถานที่: ${location}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving emergency:', error);
+                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                });
+        }
+        // Resolve Emergency
+        function resolveEmergency(emergencyId) {
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการเปลี่ยนสถานะเหตุฉุกเฉินนี้เป็น "แก้ไขแล้ว"?')) {
+                database.ref('emergencies/' + emergencyId).update({
+                    status: 'resolved',
+                    resolvedAt: Date.now()
+                })
+                    .then(() => {
+                        showNotification('แก้ไขสถานะสำเร็จ', 'เปลี่ยนสถานะเหตุฉุกเฉินเป็น "แก้ไขแล้ว" เรียบร้อยแล้ว');
+                    })
+                    .catch(error => {
+                        console.error('Error resolving emergency:', error);
+                        alert('เกิดข้อผิดพลาดในการอัพเดทข้อมูล');
+                    });
+            }
+        }
+
+
+let notifiedSchedules = new Set();
+
+function setupNotifications() {
+    // Check for notifications every 10 seconds (more frequent for accuracy)
+    setInterval(checkForNotifications, 1000);
+    // Initial check
+    checkForNotifications();
+}
+
+// Track notified schedules
+
+// ...existing code...
+
+function checkForNotifications() {
+    const now = new Date();
+    const nowDay = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const nowSeconds = now.getSeconds();
+
+    schedules.forEach(schedule => {
+        if (schedule.days && !schedule.days.includes(nowDay)) return;
+
+        const [startH, startM] = schedule.startTime.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const notifyMinutes = startMinutes - (schedule.notificationTime || 0);
+
+        // สร้างรายชื่อจุดตรวจ (แยกบรรทัด)
+        let checkpointList = '';
+        if (schedule.checkpoints && schedule.checkpoints.length > 0) {
+            checkpointList = schedule.checkpoints
+                .map(id => {
+                    const cp = checkpoints.find(c => c.id === id);
+                    return cp ? `• ${cp.name}` : '• (ไม่พบจุดตรวจ)';
+                })
+                .join('\n');
+        } else {
+            checkpointList = '• ไม่มีจุดตรวจ';
+        }
+
+        // รอบแรก: ก่อนถึงเวลา (ตามที่ตั้งค่า)
+        if (nowMinutes === notifyMinutes && nowSeconds < 10) {
+            const notificationKey1 = `${schedule.id}_before`;
+            if (!notifiedSchedules.has(notificationKey1)) {
+                showNotification(
+                    `เตือนล่วงหน้า: ${schedule.name}`,
+                    `อีก ${schedule.notificationTime} นาทีจะถึงเวลาตรวจ\nเวลาตรวจ: ${schedule.startTime}\n\nจุดตรวจ\n${checkpointList}`
+                );
+                notifiedSchedules.add(notificationKey1);
+            }
+        }
+
+        // รอบที่สอง: ถึงเวลาตรวจแล้ว
+        if (nowMinutes === startMinutes && nowSeconds < 10) {
+            const notificationKey2 = `${schedule.id}_now`;
+            if (!notifiedSchedules.has(notificationKey2)) {
+                showNotification(
+                    `⏰ ถึงเวลาตรวจแล้ว: ${schedule.name}`,
+                    `ไปตรวจตอนนี้ เวลา ${schedule.startTime}\n\nจุดตรวจ\n${checkpointList}`
+                );
+                notifiedSchedules.add(notificationKey2);
+            }
+        }
+
+        // ล้าง notification keys หลังผ่านนาทีนั้นไป
+        if (nowSeconds > 50) {
+            notifiedSchedules.delete(`${schedule.id}_before`);
+            notifiedSchedules.delete(`${schedule.id}_now`);
+        }
+    });
+}
+
+// ...existing code...
+
+        function showNotification(title, message) {
+            // Desktop notification logic
+            if ("Notification" in window && window.innerWidth > 511) {
+                if (Notification.permission === "granted") {
+                    new Notification(title, {
+                        body: message,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/3067/3067256.png'
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification(title, {
+                                body: message,
+                                icon: 'https://cdn-icons-png.flaticon.com/512/3067/3067256.png'
+                            });
+                        }
+                    });
+                }
+                showInAppNotification(title, message);
+            } else if (window.innerWidth <= 511) {
+                // Mobile: show modal
+                showMobileModalNotification(title, message);
+            } else {
+                showInAppNotification(title, message);
+            }
+        }
+
+        // Modal notification for mobile
+        function showMobileModalNotification(title, message) {
+            // Remove existing modal if any
+            const oldModal = document.getElementById('mobile-modal-notification');
+            if (oldModal) oldModal.remove();
+
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.id = 'mobile-modal-notification';
+            modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 20000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+
+            // Modal content
+            modal.innerHTML = `
+        <div style="
+            background: #fff;
+            border-radius: 12px;
+            max-width: 90vw;
+            width: 320px;
+            padding: 24px 16px 16px 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            text-align: center;
+            position: relative;
+        ">
+            <div style="font-size:2.2rem;color:var(--primary-color,#007bff);margin-bottom:8px;">
+                <i class="fas fa-bell"></i>
+            </div>
+            <h3 style="margin:0 0 8px 0;font-size:1.2rem;">${title}</h3>
+            <div style="font-size:1rem;margin-bottom:16px;">${message}</div>
+            <button id="close-mobile-modal" style="
+                background: var(--primary-color,#007bff);
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 24px;
+                font-size: 1rem;
+                cursor: pointer;
+            ">ปิด</button>
+        </div>
+    `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById('close-mobile-modal').onclick = () => {
+                modal.remove();
+            };
+        }
+
+        function showInAppNotification(title, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'card';
+            notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 350px;
+        width: 100%;
+        box-sizing: border-box;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+    `;
+
+            notification.innerHTML = `
+        <div style="display: flex; align-items: flex-start;">
+            <div style="margin-right: 10px; color: var(--primary-color); font-size: 1.2rem;">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div style="flex: 1;">
+                <h4 style="margin: 0 0 5px 0; color: var(--primary-color);">${title}</h4>
+                <p style="margin: 0; font-size: 0.9rem;">${message}</p>
+            </div>
+            <button class="close-notification" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #999;">
+                &times;
+            </button>
+        </div>
+    `;
+
+            // Add to page
+            document.body.appendChild(notification);
+
+            // Add close functionality
+            notification.querySelector('.close-notification').addEventListener('click', function () {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            });
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+
+            // Add CSS for animation and responsive
+            if (!document.getElementById('notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            @media (max-width: 511px) {
+                .card[style*="position: fixed"] {
+                    left: 0 !important;
+                    right: 0 !important;
+                    top: 0 !important;
+                    max-width: 100vw !important;
+                    border-radius: 0 0 8px 8px !important;
+                }
+            }
+        `;
+                document.head.appendChild(style);
+            }
+        }
+
+        /*prompt:แก้ไขบน mobile แจ้งเตือนเวลาถูกตามที่ setไว้ใน startTime,notificationTime
+       แต่ใน desktop แจ้งเตือนช้ากว่าปกติ 
+   
+       เช่น ฉันตั้งค่า startTime = 15:00:00 , notificationTime = 1 ดังนั้นจะต้องแจ้งเตือนตอน 14:59:00
+       แต่ใน desktop จะแจ้งเตือนเวลา 14:59:45
+       */
+
+        // Generate UUID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+    </script>
+</body>
+
+</html>
